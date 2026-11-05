@@ -122,8 +122,11 @@
     ]
   },
   "execution": {
-    "successPaths": ["/fileArgument", "/folderArgument", "/renamedExecutable"],
+    "successPaths": ["/fileArgument", "/folderArgument", "/renamedExecutable", "/argumentProbe"],
     "assertions": [
+      {"path": "/typedPathsExact", "equals": true},
+      {"path": "/argumentProbe/stderr", "equals": ""},
+      {"path": "/argumentProbe/exitCode", "equals": 0},
       {"path": "/renamedExecutable", "equals": {"ok": true, "stdout": "{\"protocol\":1,\"version\":\"0.1.0\"}\n", "stderr": "", "exitCode": 0}},
       {"path": "/missing/ok", "equals": false},
       {"path": "/missing/error/code", "equals": "missing_executable"},

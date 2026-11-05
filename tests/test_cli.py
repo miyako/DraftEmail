@@ -83,6 +83,9 @@ class CppCLI(unittest.TestCase):
         self.assertEqual(data["client"], "simple-mapi" if os.name == "nt" else "apple-mail")
         self.assertEqual(data["fields"]["cc"], os.name == "nt")
         self.assertEqual(data["fields"]["bcc"], os.name == "nt")
+        if os.name == "nt":
+            self.assertEqual(data["providerPolicy"], "registered-unicode-x64")
+            self.assertFalse(data["newOutlook"])
 
     def test_unicode_and_literal_text(self):
         for body in ["世界 café 😀", "\"'\\;$(echo nope)\n\r\t\b\f", "\u007f\u0080\u07ff\u0800\uffff\U0010ffff"]:

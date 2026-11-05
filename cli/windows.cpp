@@ -1,11 +1,11 @@
 #define NOMINMAX
 #include "protocol.hpp"
+#include "provider.hpp"
 #include <windows.h>
 #include <mapi.h>
 #include <filesystem>
 #include <thread>
 #include <future>
-#include <cwctype>
 
 namespace mail {
 namespace {
@@ -22,49 +22,57 @@ std::wstring registry(HKEY hive,const wchar_t* key,const wchar_t* name) {
     if(RegOpenKeyExW(hive,key,0,KEY_READ|KEY_WOW64_64KEY,&h)!=ERROR_SUCCESS) return {};
     DWORD type=0,size=0;
     auto result=RegQueryValueExW(h,name,nullptr,&type,nullptr,&size);
-    if(result!=ERROR_SUCCESS || type!=REG_SZ || size<sizeof(wchar_t) || size>65536) { RegCloseKey(h); return {}; }
+    if(result!=ERROR_SUCCESS || (type!=REG_SZ&&type!=REG_EXPAND_SZ) || size<sizeof(wchar_t) || size>65536 ||
+       size%sizeof(wchar_t)) { RegCloseKey(h); return {}; }
     std::wstring value(size/sizeof(wchar_t),0);
     result=RegQueryValueExW(h,name,nullptr,&type,reinterpret_cast<BYTE*>(value.data()),&size);
     RegCloseKey(h);
     if(result!=ERROR_SUCCESS || value.back()!=0) return {};
     value.pop_back();
     if(value.find(L'\0')!=std::wstring::npos) return {};
+    if(type==REG_EXPAND_SZ) {
+        DWORD length=ExpandEnvironmentStringsW(value.c_str(),nullptr,0);
+        if(!length||length>32768) return {};
+        std::wstring expanded(length,0);
+        if(ExpandEnvironmentStringsW(value.c_str(),expanded.data(),length)!=length) return {};
+        expanded.pop_back(); return expanded;
+    }
     return value;
 }
-bool x64_image(const std::wstring& name) {
+ProviderRegistration registration(HKEY hive,const std::wstring& client) {
+    std::wstring key=L"Software\\Clients\\Mail\\"+client;
+    HKEY handle=nullptr;
+    ProviderRegistration result;
+    result.present=RegOpenKeyExW(hive,key.c_str(),0,KEY_READ|KEY_WOW64_64KEY,&handle)==ERROR_SUCCESS;
+    if(handle) RegCloseKey(handle);
+    if(result.present) {
+        result.dll_path_ex=registry(hive,key.c_str(),L"DLLPathEx");
+        result.dll_path=registry(hive,key.c_str(),L"DLLPath");
+    }
+    return result;
+}
+ProviderImage provider_image(const std::wstring& name) {
     HANDLE h=CreateFileW(name.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,
                         FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
-    if(h==INVALID_HANDLE_VALUE) return false;
-    IMAGE_DOS_HEADER dos{}; DWORD read=0; bool ok=false;
-    BY_HANDLE_FILE_INFORMATION info{};
-    if(GetFileInformationByHandle(h,&info) &&
-       !(info.dwFileAttributes&(FILE_ATTRIBUTE_REPARSE_POINT|FILE_ATTRIBUTE_DIRECTORY)) &&
-       ReadFile(h,&dos,sizeof(dos),&read,nullptr) && read==sizeof(dos) &&
-       dos.e_magic==IMAGE_DOS_SIGNATURE && dos.e_lfanew>=sizeof(dos) && dos.e_lfanew<16*1024*1024) {
-        LARGE_INTEGER offset{}; offset.QuadPart=dos.e_lfanew;
-        DWORD signature=0; IMAGE_FILE_HEADER header{};
-        ok=SetFilePointerEx(h,offset,nullptr,FILE_BEGIN) &&
-            ReadFile(h,&signature,sizeof(signature),&read,nullptr) && read==sizeof(signature) &&
-            signature==IMAGE_NT_SIGNATURE && ReadFile(h,&header,sizeof(header),&read,nullptr) &&
-            read==sizeof(header) && header.Machine==IMAGE_FILE_MACHINE_AMD64;
+    if(h==INVALID_HANDLE_VALUE) return {};
+    BY_HANDLE_FILE_INFORMATION info{}; LARGE_INTEGER size{};
+    ProviderImage image;
+    if(GetFileInformationByHandle(h,&info) && GetFileType(h)==FILE_TYPE_DISK &&
+       !(info.dwFileAttributes&(FILE_ATTRIBUTE_REPARSE_POINT|FILE_ATTRIBUTE_DIRECTORY)) && GetFileSizeEx(h,&size) &&
+       size.QuadPart>0 && size.QuadPart<=128*1024*1024) {
+        std::vector<unsigned char> bytes(size_t(size.QuadPart)); DWORD read=0;
+        if(ReadFile(h,bytes.data(),DWORD(bytes.size()),&read,nullptr) && read==bytes.size())
+            image=inspect_provider_image(bytes);
     }
-    CloseHandle(h); return ok;
+    CloseHandle(h); return image;
 }
 void provider() {
     SYSTEM_INFO info{}; GetNativeSystemInfo(&info);
     if(sizeof(void*)!=8 || info.wProcessorArchitecture!=PROCESSOR_ARCHITECTURE_AMD64)
         throw Error("unsupported_architecture","native Windows x64 process and provider required",3);
-    auto selected=registry(HKEY_CURRENT_USER,L"Software\\Clients\\Mail",nullptr);
-    if(selected.empty()) selected=registry(HKEY_LOCAL_MACHINE,L"Software\\Clients\\Mail",nullptr);
-    if(selected!=L"Microsoft Outlook")
-        throw Error("unsupported_provider","default mail provider must be classic Microsoft Outlook x64; new Outlook is unsupported",3);
-    auto dll=registry(HKEY_LOCAL_MACHINE,L"Software\\Clients\\Mail\\Microsoft Outlook",L"DLLPathEx");
-    if(dll.empty()) dll=registry(HKEY_LOCAL_MACHINE,L"Software\\Clients\\Mail\\Microsoft Outlook",L"DLLPath");
-    std::filesystem::path p(dll);
-    std::wstring filename=p.filename().wstring();
-    for(auto& c:filename) c=towupper(c);
-    if(!p.is_absolute() || filename!=L"OLMAPI32.DLL" || !x64_image(dll))
-        throw Error("provider_incompatible","registered classic Outlook OLMAPI32.DLL must be an absolute readable x64 PE image",3);
+    auto selected=default_provider_name(registry(HKEY_CURRENT_USER,L"Software\\Clients\\Mail",nullptr),
+                                        registry(HKEY_LOCAL_MACHINE,L"Software\\Clients\\Mail",nullptr));
+    select_provider(selected,registration(HKEY_CURRENT_USER,selected),registration(HKEY_LOCAL_MACHINE,selected),provider_image);
     DWORD session=0;
     if(!ProcessIdToSessionId(GetCurrentProcessId(),&session) || session==0)
         throw Error("interactive_session_required","a local interactive Windows desktop session is required",3);
@@ -77,7 +85,7 @@ void provider() {
 }
 }
 std::string capabilities() {
-    return R"({"protocol":1,"backend":"simple-mapi-w","client":"simple-mapi","fields":{"to":true,"cc":true,"bcc":true,"subject":true,"body":true,"attachments":true},"interactiveRequired":true,"timeoutSeconds":540,"deliveryConfirmed":false,"stagingCleanup":true,"providerPolicy":"classic-outlook-x64-only","newOutlook":false})";
+    return R"({"protocol":1,"backend":"simple-mapi-w","client":"simple-mapi","fields":{"to":true,"cc":true,"bcc":true,"subject":true,"body":true,"attachments":true},"interactiveRequired":true,"timeoutSeconds":540,"deliveryConfirmed":false,"stagingCleanup":true,"providerPolicy":"registered-unicode-x64","newOutlook":false})";
 }
 void available(const Request& r) {
     if(r.client!="simple-mapi") throw Error("unsupported_client","this platform supports simple-mapi only",3);

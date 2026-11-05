@@ -45,8 +45,10 @@ End if
 
 Initialize `Form.composeJob:=Null` on form load. Reject repeated clicks while
 the handle is present (or disable the button). The helper requires an interactive
-desktop with Apple Mail's AppKit email sharing service on macOS, or
-**classic Outlook x64** with Simple MAPI on Windows. New Outlook is unsupported.
+desktop with Apple Mail's AppKit email sharing service on macOS, or a registered,
+compatible **x64 Unicode Simple MAPI provider** on Windows. Classic Outlook is
+the initial manual validation target, not an exclusive allowlist or proof of
+compatibility. New Outlook is unsupported.
 macOS cc/bcc are not exposed by the sharing service and nonempty lists are
 rejected, not silently omitted. The Boolean opt-in is the caller's
 responsibility; it is not proof of human presence.

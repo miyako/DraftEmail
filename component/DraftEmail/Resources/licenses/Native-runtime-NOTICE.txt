@@ -20,9 +20,11 @@ redistribution is not approved by this notice. No independent license to
 Microsoft code is granted here. Native Windows release builders must review
 their exact installed toolchain's redistribution terms before publication.
 
-MAPI32.DLL is dynamically loaded from Windows System32; classic Outlook and
-its x64 provider are explicit host dependencies installed/licensed separately.
-Neither Outlook nor its provider is redistributed by DraftEmail.
+MAPI32.DLL is dynamically loaded from Windows System32; a configured compatible
+Unicode x64 Simple MAPI client/provider is an explicit host dependency,
+installed/licensed separately. Classic Outlook is the initial interactive
+validation target; new Outlook is unsupported. Neither Outlook nor any other
+client/provider is redistributed by DraftEmail.
 
 This dependency inventory is not a legal audit or evidence of native Windows
 runtime/provider testing. Source licenses and platform/toolchain agreements

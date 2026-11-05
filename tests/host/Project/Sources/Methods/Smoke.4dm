@@ -1,15 +1,17 @@
 //%attributes = {"invisible":true}
 var $ignored : Integer
 var $parameter; $name; $target : Text
-var $folderPath : Text
+var $filePath; $folderPath : Text
 var $request; $result; $report : Object
 var $email; $bad : Object
 var $client : Text
 var $tool : cs.DraftEmail.Composer
 var $requestFile; $statusFile : 4D.File
 var $renamedExecutable : 4D.File
+var $argumentProbeExecutable : 4D.File
 var $cases : Collection
 var $invalid : Variant
+var $probePaths : Variant
 var $job; $snapshot : Object
 var $workerName; $jobId : Text
 var $attempt : Integer
@@ -308,6 +310,33 @@ Else
 	If (JSON Parse($result.stdout).status#"validated")
 		$report.success:=False
 	End if
+End if
+HOST_Phase:="exact typed argument roundtrip"
+If (Is Windows)
+	$argumentProbeExecutable:=File($request.argumentProbeExecutable; fk platform path)
+	$filePath:=$requestFile.platformPath
+	$folderPath:=$requestFile.parent.platformPath
+Else
+	$argumentProbeExecutable:=File($request.argumentProbeExecutable; fk posix path)
+	$filePath:=$requestFile.path
+	$folderPath:=$requestFile.parent.path
+End if
+$report.argumentProbe:=cs.DraftEmail._Process.new().execute($argumentProbeExecutable; New collection("-X"; "utf8"; "-c"; "import json,sys; print(json.dumps(sys.argv[1:],ensure_ascii=True))"; $requestFile; $requestFile.parent))
+$report.typedPathsExact:=False
+$report.typedPathsExpected:=New collection($filePath; $folderPath)
+If ($report.argumentProbe.ok)
+	$probePaths:=JSON Parse($report.argumentProbe.stdout)
+	$report.typedPathsActual:=$probePaths
+	If (Value type($probePaths)=Is collection)
+		If ($probePaths.length=2)
+			If ((Value type($probePaths[0])=Is text) & (Value type($probePaths[1])=Is text))
+				$report.typedPathsExact:=(Compare strings($probePaths[0]; $filePath; sk char codes)=0) & (Compare strings($probePaths[1]; $folderPath; sk char codes)=0)
+			End if
+		End if
+	End if
+End if
+If (Not($report.typedPathsExact))
+	$report.success:=False
 End if
 $report.finished:=True
 ON ERR CALL(HOST_PreviousHandler; ek local)

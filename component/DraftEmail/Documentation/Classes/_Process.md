@@ -19,6 +19,18 @@ and trailing-backslash rules. This is 4D command-line parsing, not a shell.
 The executable is a physical POSIX File path as required by SystemWorker.
 Native 4D round-trip tests, not shell tests, are necessary on each platform.
 
+The host fixture also runs a **test-only argument probe** through this same
+adapter: the Python runner supplies its absolute interpreter path, and 4D passes
+actual File and Folder objects to an inline `json.dumps(sys.argv[1:])` program.
+The interpreter uses `-X utf8` and ASCII JSON escaping; no shell, network, UI or
+production CLI flag is involved. 4D decodes the returned array and compares both
+paths with `Compare strings(...; sk char codes)`: physical `.path` on macOS
+(`.path` is the documented POSIX property) and `.platformPath` on Windows.
+The report retains the execution envelope, expected/observed paths and
+`typedPathsExact`; the runner requires successful execution and that exact
+comparison. This is native evidence only on platforms where the actual 4D host
+fixture runs; Python unit tests alone do not prove the 4D argument roundtrip.
+
 Options: `dataType:"text"`, `encoding:"UTF-8"`, `hideWindow:true`,
 `timeout:30`, `currentDirectory:file.parent`. Input is closed immediately,
 then `.wait()` completes. The adapter captures `.response` (stdout),

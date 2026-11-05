@@ -26,8 +26,9 @@ Capabilities have numeric `protocol:1`, Text `backend`/`client`, Boolean
 `to`, `cc`, `bcc`, `subject`, `body`, `attachments`.
 macOS reports `backend:"ns-sharing-service",client:"apple-mail"` and **cc/bcc
 unsupported**. Windows reports `backend:"simple-mapi-w",client:"simple-mapi"`,
-all six fields supported, `providerPolicy:"classic-outlook-x64-only"` and
-`newOutlook:false`. These are supported contract capabilities, not live consent,
+all six fields supported, a nonempty Text `providerPolicy` describing native
+provider requirements, and `newOutlook:false`. These are supported contract
+capabilities, not live consent,
 provider or account discovery.
 
 ### Request
@@ -70,9 +71,12 @@ the native helper refuses unsupported/headless execution. Apple Mail uses
 AppKit's `NSSharingServiceNameComposeEmail` sharing service, not AppleScript or
 an automatic Send API. This service does not expose cc/bcc: **nonempty cc/bcc
 are explicitly rejected**, never silently dropped. Simple MAPI uses wide-character
-`MAPISendMailW` with the dialog flag and is restricted by this helper's current
-provider policy to **classic Outlook x64**; new Outlook is unsupported. Not all
-default mail applications implement Simple MAPI. A capability report is not proof of account
+`MAPISendMailW` with dialog and force-Unicode flags. It requires a registered,
+compatible **x64 Unicode Simple MAPI provider**; new Outlook is unsupported.
+Classic Outlook is the initial manual validation target, not an exclusive
+provider allowlist or a completed compatibility claim. Registration/PE checks
+alone do not establish that a provider implements the required Unicode behavior.
+Not all default mail applications implement Simple MAPI. A capability report is not proof of account
 configuration, consent, client behavior or successful handoff.
 
 ### User Send only; handoff is not delivery
@@ -175,6 +179,11 @@ local refusals plus synthetic decoder cases. Two real `CALL WORKER` jobs exercis
 shared-state polling and self-termination using deliberately unsupported targets,
 which guarantee prelaunch failure without executing a native compose command.
 It never opens a real composer.
+The generic execution section separately launches the runner-supplied Python
+interpreter as a test-only argument probe to verify exact File/Folder path
+roundtrips, including the fixture's Unicode/spaces and POSIX quote characters.
+It preserves the renamed native executable/version check. See [_Process](_Process.md);
+the probe is not part of the production email CLI or a runtime dependency.
 Interactive Apple Mail consent/draft behavior and Windows Simple MAPI behavior
 need separate, consented manual native tests. Python tests alone do not establish
 4D worker lifetime, quoting, compiled mode or cross-platform UI behavior.

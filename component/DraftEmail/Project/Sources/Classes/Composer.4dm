@@ -342,7 +342,7 @@ Function _validCapabilities($payload : Object)->$valid : Boolean
 			If ((Value type($payload.providerPolicy)#Is text) | (Value type($payload.newOutlook)#Is Boolean))
 				return False
 			End if
-			If (($payload.backend#"simple-mapi-w") | Not($payload.fields.cc) | Not($payload.fields.bcc) | ($payload.providerPolicy#"classic-outlook-x64-only") | $payload.newOutlook | (OB Keys($payload).length#10))
+			If (($payload.backend#"simple-mapi-w") | Not($payload.fields.cc) | Not($payload.fields.bcc) | ($payload.providerPolicy="") | $payload.newOutlook | (OB Keys($payload).length#10))
 				return False
 			End if
 		Else

@@ -220,6 +220,7 @@ def test_4d(root, tool4d, component=None):
         staged_output = host / (_host_path_prefix("host status") + ".json")
         request.write_text(json.dumps({"status": str(staged_output),
                                       "expectCompiled": component is not None,
+                                      "argumentProbeExecutable": str(Path(sys.executable).resolve()),
                                       "executable": str(executable)}, ensure_ascii=False) + "\n",
                            encoding="utf-8")
         subprocess.run([str(Path(tool4d).resolve()), str(host / "Project" / "Host.4DProject"),

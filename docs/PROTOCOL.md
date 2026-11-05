@@ -90,22 +90,37 @@ Availability does not prove an account is configured.
 `cancelled`; other callback failures remain errors. Neither success nor
 cancellation proves that an attachment can safely be deleted.
 
-## Windows: classic Outlook / Unicode Simple MAPI
+## Windows: compatible Unicode Simple MAPI providers
 
 Exact capabilities output:
 
 ```json
-{"protocol":1,"backend":"simple-mapi-w","client":"simple-mapi","fields":{"to":true,"cc":true,"bcc":true,"subject":true,"body":true,"attachments":true},"interactiveRequired":true,"timeoutSeconds":540,"deliveryConfirmed":false,"stagingCleanup":true,"providerPolicy":"classic-outlook-x64-only","newOutlook":false}
+{"protocol":1,"backend":"simple-mapi-w","client":"simple-mapi","fields":{"to":true,"cc":true,"bcc":true,"subject":true,"body":true,"attachments":true},"interactiveRequired":true,"timeoutSeconds":540,"deliveryConfirmed":false,"stagingCleanup":true,"providerPolicy":"registered-unicode-x64","newOutlook":false}
 ```
 
-Support policy is deliberately narrow: native Windows x64, native x64 process,
-classic Microsoft Outlook registered as default Simple MAPI mail client, and
-its registered `OLMAPI32.DLL` must be an absolute readable x64 PE image.
-The current-user default takes precedence over the machine default; registered
-provider lookup uses the 64-bit machine registry view. Missing/ambiguous
-registration fails closed. New Outlook, 32-bit Outlook, other providers,
-Windows ARM64/emulation, services/session 0 and invisible window stations are
-unsupported. The helper also requires an accessible input desktop.
+Support is conditional: native Windows x64, a native x64 process, and a
+configured default Unicode Simple MAPI provider. Classic Outlook is the initial
+Windows interactive validation target, not a provider-name allowlist.
+The current-user default takes precedence over the machine default; selected
+client registrations are read in the 64-bit view of `Software\Clients\Mail`.
+A present current-user client key takes precedence over the machine key;
+incomplete overriding registration fails closed rather than silently switching.
+`DLLPathEx` takes precedence over `DLLPath`; `REG_EXPAND_SZ` paths are expanded.
+The selected DLL must be a readable drive-absolute x64 PE DLL with a direct
+named `MAPISendMailW` export. Its header/export table is inspected as data:
+provider code is not loaded or executed during preflight. Forwarded exports,
+unreadable/non-x64 DLLs and missing Unicode exports are unsupported because
+the helper cannot establish their Unicode/bitness compatibility.
+Classic Outlook's registered DLL must specifically be `OLMAPI32.DLL`.
+Missing default/provider/path registration returns `missing_configuration`;
+failed compatibility checks return `unsupported_provider`.
+
+New Outlook is explicitly unsupported, as are 32-bit providers, Windows
+ARM64/emulation, services/session 0 and invisible window stations.
+Known new-Outlook client registrations are refused explicitly; other
+registrations still must pass every DLL/Unicode check. This policy does not
+claim every default client is compatible or that a checked provider is properly
+configured. The helper also requires an accessible input desktop.
 No registry, accounts, defaults or provider files are modified.
 
 Load only the system `MAPI32.DLL` with `LOAD_LIBRARY_SEARCH_SYSTEM32`; resolve
@@ -180,7 +195,7 @@ Pre-handoff staging failures remove the helper's incomplete new batch.
 | Exit | Codes |
 | --- | --- |
 | 2 | `invalid_arguments`, `invalid_utf8`, `invalid_json`, `invalid_request`, `unknown_field`, `unsupported_field`, `limit_exceeded`, `invalid_attachment`, `invalid_staging` |
-| 3 | `unsupported_client`, `unsupported_architecture`, `interactive_session_required`, `client_unavailable`, `backend_unavailable`, `unsupported_provider`, `provider_incompatible`, `unicode_mapi_unavailable`, `backend_error`, `staging_failed`, `internal_error` |
+| 3 | `unsupported_client`, `unsupported_architecture`, `interactive_session_required`, `client_unavailable`, `backend_unavailable`, `unsupported_provider`, `missing_configuration`, `unicode_mapi_unavailable`, `backend_error`, `staging_failed`, `internal_error` |
 | 4 | `timeout` — outcome unknown, copies retained |
 
 Filesystem exceptions not otherwise classified return `internal_error`.
@@ -210,7 +225,9 @@ References inspected (2026-11-06):
   deliberately not used in this standalone component CLI.
 
 Run `TEST_CLI_LANGUAGE=cpp python3 -m unittest discover -s tests -p test_cli.py -v`.
-It builds the native executable and runs CTest private-copy/cleanup checks plus
+It builds the native executable and runs CTest private-copy/cleanup and pure
+provider-selection/PE-export checks (injected registrations, no real registry
+mutation or provider execution), plus
 strict protocol/schema/Unicode/address/attachment/preflight tests. CTest uses
 a separately compiled staging implementation confined to its build directory,
 not the user's real staging directory. No test invokes a valid compose,
