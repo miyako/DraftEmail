@@ -2,9 +2,9 @@
   "schema": 1,
   "cases": [
     {"args": ["--version"], "exitCode": 0, "stdout": {"protocol": 1, "version": "$VERSION"}, "stderr": ""},
-    {"args": ["greet", "--name", "世界 café"], "exitCode": 0, "stdout": {"protocol": 1, "message": "Hello, 世界 café!"}, "stderr": ""},
-    {"args": ["greet", "--name", "quote\" slash\\\n"], "exitCode": 0, "stdout": {"protocol": 1, "message": "Hello, quote\" slash\\\n!"}, "stderr": ""},
-    {"args": ["greet", "--name", ""], "exitCode": 2, "stdout": "", "stderr": {"protocol": 1, "error": {"code": "invalid_arguments", "message": "expected greet --name <non-empty UTF-8 name> or --version"}}},
-    {"args": ["unknown"], "exitCode": 2, "stdout": "", "stderr": {"protocol": 1, "error": {"code": "invalid_arguments", "message": "expected greet --name <non-empty UTF-8 name> or --version"}}}
+    {"args": ["validate", "--request", "{\"protocol\":1,\"client\":\"apple-mail\",\"to\":[\"test@example.com\"],\"cc\":[],\"bcc\":[],\"subject\":\"世界 café\",\"body\":\"text only\",\"attachments\":[]}"], "exitCode": 0, "stdout": {"protocol": 1, "status": "validated"}, "stderr": ""},
+    {"args": ["validate", "--request", "{\"protocol\":1,\"client\":\"simple-mapi\",\"to\":[],\"cc\":[\"copy@example.com\"],\"bcc\":[\"blind@example.com\"],\"subject\":\"literal \\\"quotes\\\"\",\"body\":\"line\\nbreak\",\"attachments\":[]}"], "exitCode": 0, "stdout": {"protocol": 1, "status": "validated"}, "stderr": ""},
+    {"args": ["validate", "--request", "{\"protocol\":1,\"protocol\":1}"], "exitCode": 2, "stdout": "", "stderr": {"protocol": 1, "error": {"code": "invalid_json", "message": "request must be strict JSON without duplicate keys"}}},
+    {"args": ["validate", "--request", "{\"protocol\":1,\"client\":\"apple-mail\",\"to\":[],\"cc\":[\"a@b\"],\"bcc\":[],\"subject\":\"\",\"body\":\"\",\"attachments\":[]}"], "exitCode": 2, "stdout": "", "stderr": {"protocol": 1, "error": {"code": "unsupported_field", "message": "apple-mail does not expose cc or bcc"}}}
   ]
 }

@@ -1,0 +1,29 @@
+DraftEmail native CLI dependency and redistribution notice
+
+The CLI implementation and its original JSON parser are covered by this
+repository's MIT license. No third-party JSON library, prior-art plug-in source,
+Mail/Outlook executable, or vendor SDK is bundled.
+
+macOS: the executable dynamically links Apple system frameworks AppKit,
+Security and SystemConfiguration, and the system C/C++ runtime. Those system
+libraries are supplied by macOS, not copied into this component. Use and
+distribution of the executable remain subject to the applicable Apple SDK and
+macOS terms. This notice does not grant redistribution rights to Apple binaries.
+
+Windows: CMake selects the static Microsoft C/C++ runtime (/MT, /MTd for Debug).
+The Windows SDK and Visual C++ build tools are development dependencies, not
+component payloads. Microsoft runtime redistribution rights and restrictions
+come from the license/REDIST terms of the exact Visual Studio/Build Tools
+installation used for the Windows release. Only an authorized licensed
+toolchain's permitted release runtime may be distributed; Debug runtime
+redistribution is not approved by this notice. No independent license to
+Microsoft code is granted here. Native Windows release builders must review
+their exact installed toolchain's redistribution terms before publication.
+
+MAPI32.DLL is dynamically loaded from Windows System32; classic Outlook and
+its x64 provider are explicit host dependencies installed/licensed separately.
+Neither Outlook nor its provider is redistributed by DraftEmail.
+
+This dependency inventory is not a legal audit or evidence of native Windows
+runtime/provider testing. Source licenses and platform/toolchain agreements
+retain their respective terms.

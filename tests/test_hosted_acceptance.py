@@ -54,6 +54,8 @@ class HostedAcceptanceTests(unittest.TestCase):
         self.assertEqual(report["steps"]["native_intel_4d"]["status"], "not_run")
         self.assertEqual(report["steps"]["windows_4d"]["status"], "not_run")
         self.assertEqual(report["steps"]["signing"]["status"], "not_run")
+        for check in ("apple_mail_interactive", "classic_outlook_interactive", "provider_configuration"):
+            self.assertEqual(report["steps"][check]["status"], "not_run")
         for target in accept_hosted.TARGETS:
             self.assertEqual(report["steps"]["cli_test_" + target]["status"], "passed")
         archive = self.root / report["artifact"]["path"]

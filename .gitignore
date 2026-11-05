@@ -11,6 +11,8 @@ userPreferences.*/
 component/*/Data/
 component/*/Logs/
 component/*/Resources/bin/
+tooling/compiler/Project/DerivedData/
+tooling/compiler/Project/Sources/catalog.4DCatalog
 .DS_Store
 .tools/
 .initialize-*/

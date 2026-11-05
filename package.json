@@ -1,8 +1,8 @@
 {
-  "name": "4d-component-template",
+  "name": "DraftEmail",
   "version": "0.1.0",
   "private": true,
-  "description": "Deterministic UTF-8 greeting example",
+  "description": "Interactive plain-text email composition with attachments using Apple Mail and Windows Simple MAPI; never automatic sending",
   "license": "MIT",
   "tool": {
     "platform": "macos",

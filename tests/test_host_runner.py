@@ -182,6 +182,36 @@ class ContractTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 runner.validate_status(status, CONTRACT, False)
 
+    def test_composition_decoder_rejects_delivery_and_bad_staging(self):
+        for path in ("/protocolStatuses/0", "/protocolStatuses/1",
+                     "/composeStatuses/2", "/stagingProtocol/1", "/stagingProtocol/2"):
+            status = valid_status()
+            runner._pointer(status, path)["ok"] = True
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+        status = valid_status()
+        status["composeStatuses"][0]["value"]["status"] = "sent"
+        with self.assertRaises(ValueError):
+            runner.validate_status(status, CONTRACT, False)
+
+    def test_native_error_details_and_capabilities_are_required(self):
+        for path, key in (("/nativeError/error", "details"),
+                          ("/nativeInvalid", "exitCode"),
+                          ("/capabilities/value", "deliveryConfirmed"),
+                          ("/fileTypedArgument", "stderr"),
+                          ("/folderTypedArgument", "stderr")):
+            status = valid_status()
+            del runner._pointer(status, path)[key]
+            with self.subTest(path=path, key=key), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+
+    def test_request_type_failures_have_no_fake_exit_status(self):
+        for index in range(13):
+            status = valid_status()
+            status["requestTypes"][index]["exitCode"] = 0
+            with self.subTest(index=index), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+
     def test_execution_successes_preserve_streams_without_feature_value(self):
         status = valid_status()
         status["fileArgument"]["stderr"] = "diagnostic, not a failure"
