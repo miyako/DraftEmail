@@ -181,6 +181,33 @@ class HostedAcceptanceTests(unittest.TestCase):
         self.assertLess(workflow.index("accept_hosted.py"), workflow.index("name: compiled-component"))
         self.assertNotIn("gh release", workflow)
 
+    def test_signed_test_ci_is_manual_trusted_ref_and_artifact_only(self):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        signed = workflow.split("\n  signed_test:\n", 1)[1]
+        self.assertIn("github.event_name == 'workflow_dispatch'", signed)
+        self.assertIn("inputs.signed_test == true", signed)
+        self.assertIn("github.repository == 'miyako/DraftEmail'", signed)
+        self.assertIn("github.ref == 'refs/heads/miyako-draft-email-component'", signed)
+        self.assertIn("contents: read", signed)
+        self.assertNotIn("contents: write", workflow)
+        self.assertIn("persist-credentials: false", signed)
+        self.assertIn("RELEASE_SHA: ${{ github.sha }}", signed)
+        self.assertIn("--require-apple-signing", signed)
+        self.assertIn("name: signed-test-component", signed)
+        self.assertIn("dist/DraftEmail.acceptance.json", signed)
+        self.assertIn("dist/DraftEmail-signing.json", signed)
+        for forbidden in ("release_assets.py", "--create-tag", "--publish", "git push", "bump_release.py"):
+            self.assertNotIn(forbidden, signed)
+        before = workflow.split("\n  signed_test:\n", 1)[0]
+        self.assertNotIn("${{ secrets.", before)
+        secret_step = signed.split("      - name: Sign notarize staple", 1)[1]
+        secret_step = secret_step.split("      - name: Retain accepted", 1)[0]
+        for name in ("APPLE_DEVELOPER_ID_CERTIFICATE", "APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD",
+                     "KEYCHAIN_PASSWORD", "NOTARYTOOL_APPLE_ID", "NOTARYTOOL_TEAM_ID",
+                     "NOTARYTOOL_PASSWORD", "CODESIGN_APPLE_ID"):
+            self.assertEqual(workflow.count("${{ secrets." + name + " }}"), 1)
+            self.assertIn("${{ secrets." + name + " }}", secret_step)
+
 
 if __name__ == "__main__":
     unittest.main()

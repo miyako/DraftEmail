@@ -142,6 +142,19 @@ failed host checks stop acceptance. Merely green CLI jobs do not validate
 interactive Apple Mail, classic Outlook, Windows providers or native 4D on
 every platform.
 
+For an explicitly authorized **signed test package without publication**, run
+**CI** on `miyako-draft-email-component` with `signed_test=true`. This path
+is restricted to that trusted branch in `miyako/DraftEmail`, uses a read-only
+repository token, and exposes the seven signing secrets only to its signing
+step. It rebuilds all native targets from the dispatch SHA, runs source and
+unsigned compiled-host checks, signs the macOS CLI and component libraries,
+notarizes/staples a DMG, and tests the final ZIP rebuilt from that DMG.
+Download `signed-test-component` (ZIP, DMG, signing proof and acceptance JSON)
+from the run's artifacts within 30 days. The current version is signing metadata
+only: this path does not bump versions, create a tag or GitHub Release, or
+invoke Publish. Pushes, pull requests and reusable release calls cannot activate
+this secret-bearing job. Interactive email testing remains separate.
+
 Publication requires separate authorization. Publish accepts patch/minor/major,
 commits synchronized metadata to main, builds that exact revision and only
 creates a tag/release after the required final-package gates. Signing is
@@ -151,10 +164,10 @@ credentials from another repository. No release or tag is required for
 development.
 
 Once an accepted asset exists, manually install its unpacked `DraftEmail.4dbase`
-in the host's `Components/` folder. GitHub Dependency manager installation of
-this **private** repository also requires appropriate access from the host;
-do not make it public to bypass authentication. Dependency-manager installation
-must be tested separately using the actual published asset.
+in the host's `Components/` folder. Signed test artifacts are not published
+Dependency manager releases. Dependency-manager installation must be tested
+separately using an actual published asset. Repository visibility is managed
+separately by the owner; changing it is not part of building a package.
 
 ## Validation boundaries
 

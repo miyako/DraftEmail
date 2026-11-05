@@ -4,6 +4,26 @@ on:
     branches: ['**']
   pull_request:
   workflow_dispatch:
+    inputs:
+          - name: Preserve failed or successful 4D diagnostics
+            if: always() && vars.FOURD_ENABLED == 'true' && github.ref_type != 'tag' && !inputs.release_call
+            uses: actions/upload-artifact@v4
+            with:
+              name: component-acceptance-diagnostics
+              path: |
+                build/hosted-acceptance.json
+                build/source-host-status.json
+                build/compile-status.json
+                build/compiled-host-status.json
+                build/host-status.json
+              if-no-files-found: warn
+              retention-days: 30
+
+      signed_test:
+        description: Build a signed notarized test artifact without creating a tag or release
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       source_sha:
@@ -139,15 +159,85 @@ jobs:
             dist/*.acceptance.json
           if-no-files-found: error
           retention-days: 30
-      - name: Preserve failed or successful 4D diagnostics
-        if: always() && vars.FOURD_ENABLED == 'true' && github.ref_type != 'tag' && !inputs.release_call
+
+  signed_test:
+    needs: [configuration, native]
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.signed_test == true &&
+      github.repository == 'miyako/DraftEmail' &&
+      github.ref == 'refs/heads/miyako-draft-email-component'
+    runs-on: macos-15
+    permissions:
+      contents: read
+    timeout-minutes: 60
+    env:
+      RELEASE_SHA: ${{ github.sha }}
+      TOOL4D_URL: ${{ vars.TOOL4D_URL }}
+      TOOL4D_SHA256: ${{ vars.TOOL4D_SHA256 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Record current version as signing metadata only
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          version = json.loads(Path("template.json").read_text())["version"]
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              output.write("RELEASE_TAG=v" + version + "\n")
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-macos-x64
+          path: build/macos-x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-macos-arm64
+          path: build/macos-arm64
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-windows-x64
+          path: build/windows-x64
+      - name: Download SHA-256-verified free tool4D
+        run: python scripts/ci_config.py download-tool4d
+      - name: Sign notarize staple and test the exact final artifact without publication
+        env:
+          APPLE_DEVELOPER_ID_CERTIFICATE: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE }}
+          APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          NOTARYTOOL_APPLE_ID: ${{ secrets.NOTARYTOOL_APPLE_ID }}
+          NOTARYTOOL_TEAM_ID: ${{ secrets.NOTARYTOOL_TEAM_ID }}
+          NOTARYTOOL_PASSWORD: ${{ secrets.NOTARYTOOL_PASSWORD }}
+          CODESIGN_APPLE_ID: ${{ secrets.CODESIGN_APPLE_ID }}
+        run: >-
+          python scripts/accept_hosted.py --repository "$GITHUB_REPOSITORY"
+          --tool4d .tools/tool4d.app/Contents/MacOS/tool4d --tag "$RELEASE_TAG"
+          --require-apple-signing
+      - name: Retain accepted signed test artifacts only
         uses: actions/upload-artifact@v4
         with:
-          name: component-acceptance-diagnostics
+          name: signed-test-component
+          path: |
+            dist/DraftEmail.zip
+            dist/DraftEmail.dmg
+            dist/DraftEmail-signing.json
+            dist/DraftEmail.acceptance.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Retain sanitized acceptance diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-test-diagnostics
           path: |
             build/hosted-acceptance.json
             build/source-host-status.json
             build/compile-status.json
+            build/unsigned-compiled-host-status.json
             build/compiled-host-status.json
             build/host-status.json
           if-no-files-found: warn
