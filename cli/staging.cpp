@@ -36,17 +36,44 @@ void no_links(const fs::path& p) {
     }
 }
 #ifdef _WIN32
-void owner_only(const fs::path& p) {
+std::vector<unsigned char> current_user() {
     HANDLE token=nullptr;
     if(!OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&token)) throw Error("staging_failed","cannot verify staging owner",3);
     DWORD size=0; GetTokenInformation(token,TokenUser,nullptr,0,&size);
     std::vector<unsigned char> data(size);
-    bool ok=GetTokenInformation(token,TokenUser,data.data(),size,&size)!=0;
+    bool ok=size>0 && GetTokenInformation(token,TokenUser,data.data(),size,&size)!=0;
     CloseHandle(token);
+    if(!ok || !IsValidSid(reinterpret_cast<TOKEN_USER*>(data.data())->User.Sid))
+        throw Error("staging_failed","cannot verify staging owner",3);
+    return data;
+}
+struct PrivateSecurity {
+    PSECURITY_DESCRIPTOR descriptor=nullptr;
+    SECURITY_ATTRIBUTES attributes{};
+    PrivateSecurity() {
+        auto user=current_user();
+        LPWSTR sid=nullptr;
+        if(!ConvertSidToStringSidW(reinterpret_cast<TOKEN_USER*>(user.data())->User.Sid,&sid))
+            throw Error("staging_failed","cannot identify staging owner",3);
+        std::wstring identity(sid);
+        LocalFree(sid);
+        // Elevated tokens may default new objects' owner to Administrators.
+        // Set TokenUser explicitly rather than relaxing the owner assertion.
+        std::wstring sddl=L"O:"+identity+L"D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;"+identity+L")";
+        if(!ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(),SDDL_REVISION_1,&descriptor,nullptr))
+            throw Error("staging_failed","cannot create private ACL",3);
+        attributes={sizeof(SECURITY_ATTRIBUTES),descriptor,FALSE};
+    }
+    ~PrivateSecurity() { if(descriptor) LocalFree(descriptor); }
+    PrivateSecurity(const PrivateSecurity&)=delete;
+    PrivateSecurity& operator=(const PrivateSecurity&)=delete;
+};
+void owner_only(const fs::path& p) {
+    auto data=current_user();
     PSID owner=nullptr; PSECURITY_DESCRIPTOR descriptor=nullptr;
     DWORD status=GetNamedSecurityInfoW(p.c_str(),SE_FILE_OBJECT,OWNER_SECURITY_INFORMATION,
                                      &owner,nullptr,nullptr,nullptr,&descriptor);
-    ok=ok && status==ERROR_SUCCESS && owner && EqualSid(owner,reinterpret_cast<TOKEN_USER*>(data.data())->User.Sid);
+    bool ok=status==ERROR_SUCCESS && owner && EqualSid(owner,reinterpret_cast<TOKEN_USER*>(data.data())->User.Sid);
     if(descriptor) LocalFree(descriptor);
     if(!ok) throw Error("staging_failed","staging directory has unexpected owner",3);
 }
@@ -95,13 +122,8 @@ fs::path root(bool create) {
     fs::path result=parent/"DraftEmail-staging";
     if(create && !fs::exists(result)) {
 #ifdef _WIN32
-        PSECURITY_DESCRIPTOR descriptor=nullptr;
-        if(!ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            L"D:P(A;;FA;;;SY)(A;;FA;;;OW)",SDDL_REVISION_1,&descriptor,nullptr))
-            throw Error("staging_failed","cannot create private ACL",3);
-        SECURITY_ATTRIBUTES sa{sizeof(sa),descriptor,FALSE};
-        BOOL made=CreateDirectoryW(result.c_str(),&sa);
-        LocalFree(descriptor);
+        PrivateSecurity security;
+        BOOL made=CreateDirectoryW(result.c_str(),&security.attributes);
         if(!made && GetLastError()!=ERROR_ALREADY_EXISTS) throw Error("staging_failed","cannot create staging root",3);
 #else
         if(mkdir(result.c_str(),0700) && errno!=EEXIST) throw Error("staging_failed","cannot create staging root",3);
@@ -116,13 +138,10 @@ fs::path root(bool create) {
         throw Error("staging_failed","staging root is not private",3);
 #else
     owner_only(result);
-    // Reapply a protected current-owner/system DACL before putting any data here.
+    // Reapply a protected current-user/system DACL before putting any data here.
     if(create) {
-        PSECURITY_DESCRIPTOR sd=nullptr;
-        if(!ConvertStringSecurityDescriptorToSecurityDescriptorW(L"D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;OW)",SDDL_REVISION_1,&sd,nullptr))
-            throw Error("staging_failed","cannot secure staging root",3);
-        BOOL ok=SetFileSecurityW(result.c_str(),DACL_SECURITY_INFORMATION|PROTECTED_DACL_SECURITY_INFORMATION,sd);
-        LocalFree(sd);
+        PrivateSecurity security;
+        BOOL ok=SetFileSecurityW(result.c_str(),DACL_SECURITY_INFORMATION|PROTECTED_DACL_SECURITY_INFORMATION,security.descriptor);
         if(!ok) throw Error("staging_failed","cannot secure staging root",3);
     }
 #endif
@@ -160,11 +179,15 @@ Staging stage(const Request& r) {
     out.token=token();
     auto dir=base/out.token;
 #ifdef _WIN32
-    if(!CreateDirectoryW(dir.c_str(),nullptr)) throw Error("staging_failed","cannot create private staging",3);
+    PrivateSecurity security;
+    if(!CreateDirectoryW(dir.c_str(),&security.attributes)) throw Error("staging_failed","cannot create private staging",3);
 #else
     if(mkdir(dir.c_str(),0700)) throw Error("staging_failed","cannot create private staging",3);
 #endif
     try {
+#ifdef _WIN32
+        owner_only(dir);
+#endif
         uint64_t total=0;
         for(size_t i=0;i<r.attachments.size();++i) {
             check_attachment(r.attachments[i]);
@@ -173,7 +196,7 @@ Staging stage(const Request& r) {
             if(total>max_total) throw Error("limit_exceeded","attachments exceed 100 MiB total");
             auto destination=dir/(std::to_string(i)+"-"+path(r.attachments[i]).filename().u8string());
 #ifdef _WIN32
-            HANDLE target=CreateFileW(destination.c_str(),GENERIC_WRITE,0,nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr);
+            HANDLE target=CreateFileW(destination.c_str(),GENERIC_WRITE,0,&security.attributes,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,nullptr);
             if(target==INVALID_HANDLE_VALUE) throw Error("staging_failed","cannot create staging file",3);
             bool ok=true; uint64_t copied=0; char buffer[65536]; DWORD n=0,w=0;
             while(ok && ReadFile(source.h,buffer,sizeof(buffer),&n,nullptr) && n) {
