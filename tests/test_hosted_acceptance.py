@@ -183,6 +183,9 @@ class HostedAcceptanceTests(unittest.TestCase):
 
     def test_signed_test_ci_is_manual_trusted_ref_and_artifact_only(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        self.assertIn("  workflow_dispatch:\n    inputs:\n      signed_test:\n", workflow)
+        self.assertLess(workflow.index("name: Preserve failed or successful 4D diagnostics"),
+                        workflow.index("\n  signed_test:\n"))
         signed = workflow.split("\n  signed_test:\n", 1)[1]
         self.assertIn("github.event_name == 'workflow_dispatch'", signed)
         self.assertIn("inputs.signed_test == true", signed)

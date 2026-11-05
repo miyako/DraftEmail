@@ -5,20 +5,6 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-          - name: Preserve failed or successful 4D diagnostics
-            if: always() && vars.FOURD_ENABLED == 'true' && github.ref_type != 'tag' && !inputs.release_call
-            uses: actions/upload-artifact@v4
-            with:
-              name: component-acceptance-diagnostics
-              path: |
-                build/hosted-acceptance.json
-                build/source-host-status.json
-                build/compile-status.json
-                build/compiled-host-status.json
-                build/host-status.json
-              if-no-files-found: warn
-              retention-days: 30
-
       signed_test:
         description: Build a signed notarized test artifact without creating a tag or release
         type: boolean
@@ -158,6 +144,20 @@ jobs:
             dist/*.zip
             dist/*.acceptance.json
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Preserve failed or successful 4D diagnostics
+        if: always() && vars.FOURD_ENABLED == 'true' && github.ref_type != 'tag' && !inputs.release_call
+        uses: actions/upload-artifact@v4
+        with:
+          name: component-acceptance-diagnostics
+          path: |
+            build/hosted-acceptance.json
+            build/source-host-status.json
+            build/compile-status.json
+            build/compiled-host-status.json
+            build/host-status.json
+          if-no-files-found: warn
           retention-days: 30
 
   signed_test:
