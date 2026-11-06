@@ -6,6 +6,6 @@
   "cli": "draft-email-cli",
   "language": "cpp",
   "feature": "Interactive plain-text email composition with attachments using Apple Mail and Windows Simple MAPI; never automatic sending",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "feature_class": "Composer"
 }

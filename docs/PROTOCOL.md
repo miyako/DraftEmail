@@ -13,7 +13,7 @@ stream; no banners or logs. All objects contain numeric `protocol:1`.
 
 | Arguments | Result |
 | --- | --- |
-| `--version` | stdout exactly `{"protocol":1,"version":"0.1.1"}\n` |
+| `--version` | stdout exactly `{"protocol":1,"version":"0.1.2"}\n` |
 | `capabilities` | Noninteractive static platform contract below; does not launch a client, enumerate accounts, or prove provider availability |
 | `validate --request <JSON>` | Fully checks schema, supported fields, paths and readable regular files without staging or UI; stdout exactly `{"protocol":1,"status":"validated"}\n` |
 | `compose --request <JSON>` | Requires explicit `interactive:true`; checks availability, stages attachments, invokes the native compose UI |

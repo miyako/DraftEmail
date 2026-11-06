@@ -1,6 +1,6 @@
 {
   "name": "DraftEmail",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Interactive plain-text email composition with attachments using Apple Mail and Windows Simple MAPI; never automatic sending",
   "license": "MIT",

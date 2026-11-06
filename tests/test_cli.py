@@ -69,7 +69,7 @@ class CppCLI(unittest.TestCase):
     def test_version(self):
         result = self.run_cli(["--version"])
         self.assertEqual((result.returncode, result.stdout, result.stderr),
-                         (0, b'{"protocol":1,"version":"0.1.1"}\n', b""))
+                         (0, b'{"protocol":1,"version":"0.1.2"}\n', b""))
 
     def test_capabilities_no_ui(self):
         result = self.run_cli(["capabilities"])
