@@ -111,7 +111,7 @@ python3 scripts/test_4d.py --root . \
 python3 scripts/compile_component.py --root . \
   --tool4d .tools/tool4d.app/Contents/MacOS/tool4d
 python3 scripts/package_component.py --root . \
-  --repository miyako/DraftEmail --tag v0.1.0 --unpack-test
+  --repository miyako/DraftEmail --tag 0.1.0 --unpack-test
 python3 scripts/test_4d.py --root . \
   --tool4d .tools/tool4d.app/Contents/MacOS/tool4d \
   --component build/release-test/DraftEmail.4dbase
@@ -157,7 +157,7 @@ this secret-bearing job. Interactive email testing remains separate.
 
 Publication requires separate authorization. Publish accepts patch/minor/major,
 commits synchronized metadata to main, builds that exact revision and only
-creates a tag/release after the required final-package gates. Publish signing
+creates a prefix-free `X.Y.Z` tag/release after the required final-package gates. Publish signing
 is controlled only by `release-policy.json`: an exact version entry requires
 signing/notarization; unlisted versions are unsigned. There is no Publish
 dispatch override. The planned first public release, `0.1.2`, requires Apple
@@ -177,6 +177,30 @@ in the host's `Components/` folder. Signed test artifacts are not published
 Dependency manager releases. Dependency-manager installation must be tested
 separately using an actual published asset. Repository visibility is managed
 separately by the owner; changing it is not part of building a package.
+
+### Release versions and Dependency Manager tags
+
+Use **prefix-free component versions and tags**: `0.1.0`, not `v0.1.0`.
+The version in `template.json`/`package.json`, new release tag and signing proof
+must agree exactly. Explicit prefixed tag inputs are rejected, not normalized.
+For example, an ordinary tag dependency uses `"tag": "0.1.0"`.
+
+The official [Follow 4D version guide](https://blog.4d.com/follow-4d-version-a-smarter-way-to-manage-your-dependencies/)
+describes a separate **host-version-aligned** rule: LTS tags `x.y.p` (e.g.
+`20.2.3` for 4D 20.2) and R-release tags `xRy.p` (e.g. `20R3.2`).
+An ordinary component release `0.1.0` does **not** imply Follow4D matching or
+host compatibility; select an ordinary tag/version rule instead.
+This SemVer pipeline does not implement R-release tag publication and rejects
+`20R3.2`. Host-aligned distribution requires an explicit compatibility contract.
+
+Publish plans the next version numerically from both stable `X.Y.Z` and legacy
+`vX.Y.Z` tags, ignoring prereleases, build metadata and unrelated tags.
+Without stable history it bumps the configured version. New builds require
+fresh acceptance/signing evidence; signing policy remains unchanged.
+Existing published `v0.1.3` and other legacy tags/releases are left intact:
+there is no deletion, renaming, moving, automatic aliasing or release editing.
+Consumers pinned to old tags stay unchanged until explicitly migrated.
+Upstream Actions versions and historical external release links are unchanged.
 
 ## Validation boundaries
 
