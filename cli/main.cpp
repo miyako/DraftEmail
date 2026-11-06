@@ -1,7 +1,7 @@
 #include "protocol.hpp"
 #include <iostream>
 #include <vector>
-constexpr auto kVersion = "0.1.0";
+constexpr auto kVersion = "0.1.1";
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>

@@ -3,156 +3,688 @@
   "feature": {
     "casesPath": "/cases",
     "cases": [
-      {"stdout": "{\"protocol\":1,\"status\":\"validated\"}\n", "stderr": "", "exitCode": 0, "value": {"protocol": 1, "status": "validated"}},
-      {"stdout": "{\"protocol\":1,\"status\":\"validated\"}\n", "stderr": "", "exitCode": 0, "value": {"protocol": 1, "status": "validated"}},
-      {"stdout": "{\"protocol\":1,\"status\":\"validated\"}\n", "stderr": "", "exitCode": 0, "value": {"protocol": 1, "status": "validated"}},
-      {"stdout": "{\"protocol\":1,\"status\":\"validated\"}\n", "stderr": "", "exitCode": 0, "value": {"protocol": 1, "status": "validated"}},
-      {"stdout": "{\"protocol\":1,\"status\":\"validated\"}\n", "stderr": "", "exitCode": 0, "value": {"protocol": 1, "status": "validated"}},
-      {"stdout": "{\"protocol\":1,\"status\":\"validated\"}\n", "stderr": "", "exitCode": 0, "value": {"protocol": 1, "status": "validated"}}
+      {
+        "stdout": "{\"protocol\":1,\"status\":\"validated\"}\n",
+        "stderr": "",
+        "exitCode": 0,
+        "value": {
+          "protocol": 1,
+          "status": "validated"
+        }
+      },
+      {
+        "stdout": "{\"protocol\":1,\"status\":\"validated\"}\n",
+        "stderr": "",
+        "exitCode": 0,
+        "value": {
+          "protocol": 1,
+          "status": "validated"
+        }
+      },
+      {
+        "stdout": "{\"protocol\":1,\"status\":\"validated\"}\n",
+        "stderr": "",
+        "exitCode": 0,
+        "value": {
+          "protocol": 1,
+          "status": "validated"
+        }
+      },
+      {
+        "stdout": "{\"protocol\":1,\"status\":\"validated\"}\n",
+        "stderr": "",
+        "exitCode": 0,
+        "value": {
+          "protocol": 1,
+          "status": "validated"
+        }
+      },
+      {
+        "stdout": "{\"protocol\":1,\"status\":\"validated\"}\n",
+        "stderr": "",
+        "exitCode": 0,
+        "value": {
+          "protocol": 1,
+          "status": "validated"
+        }
+      },
+      {
+        "stdout": "{\"protocol\":1,\"status\":\"validated\"}\n",
+        "stderr": "",
+        "exitCode": 0,
+        "value": {
+          "protocol": 1,
+          "status": "validated"
+        }
+      }
     ],
     "assertions": [
-      {"path": "/invalid", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "subject must be Text"}}},
-      {"path": "/noInteractive", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "compose requires interactive:true after a user action"}}},
-      {"path": "/nullRequest", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "A request Object is required"}}},
-      {"path": "/nullCompose", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "A request Object is required"}}},
-      {"path": "/pollInvalid", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "The shared job returned by compose is required"}}},
-      {"path": "/requestTypes", "length": 13, "each": [
-        {"path": "/ok", "equals": false},
-        {"path": "/error/code", "equals": "invalid_argument"},
-        {"path": "/stdout", "absent": true},
-        {"path": "/exitCode", "absent": true}
-      ]},
-      {"path": "/nativeInvalid", "equals": {
-        "ok": false, "stdout": "", "stderr": "{\"protocol\":1,\"error\":{\"code\":\"unsupported_field\",\"message\":\"apple-mail does not expose cc or bcc\"}}\n", "exitCode": 2,
-        "error": {"code": "unsupported_field", "message": "apple-mail does not expose cc or bcc"}
-      }},
-      {"path": "/capabilitiesClientMatches", "equals": true},
-      {"path": "/capabilities/ok", "equals": true},
-      {"path": "/capabilities/stderr", "equals": ""},
-      {"path": "/capabilities/exitCode", "equals": 0},
-      {"path": "/capabilities/value/protocol", "equals": 1},
-      {"path": "/capabilities/value/interactiveRequired", "equals": true},
-      {"path": "/capabilities/value/timeoutSeconds", "equals": 540},
-      {"path": "/capabilities/value/deliveryConfirmed", "equals": false},
-      {"path": "/capabilities/value/stagingCleanup", "equals": true},
-      {"path": "/version/ok", "equals": true},
-      {"path": "/version/stdout", "equals": "{\"protocol\":1,\"version\":\"0.1.0\"}\n"},
-      {"path": "/version/stderr", "equals": ""},
-      {"path": "/version/exitCode", "equals": 0},
-      {"path": "/version/value", "equals": {"protocol": 1, "version": "0.1.0"}},
-      {"path": "/protocol/ok", "equals": false},
-      {"path": "/protocol/stdout", "equals": "not json"},
-      {"path": "/protocol/stderr", "equals": ""},
-      {"path": "/protocol/exitCode", "equals": 0},
-      {"path": "/protocol/error/code", "equals": "invalid_protocol"},
-      {"path": "/protocolTypes", "length": 2, "each": [
-        {"path": "/ok", "equals": false},
-        {"path": "/stderr", "equals": ""},
-        {"path": "/exitCode", "equals": 0},
-        {"path": "/error/code", "equals": "invalid_protocol"},
-        {"path": "/error/message", "equals": "Unsupported CLI protocol version"},
-        {"path": "/value", "absent": true}
-      ]},
-      {"path": "/protocolTypes/0/stdout", "equals": "{\"protocol\":true,\"status\":\"validated\"}"},
-      {"path": "/protocolTypes/1/stdout", "equals": "{\"protocol\":false,\"status\":\"validated\"}"},
-      {"path": "/protocolNull/ok", "equals": false},
-      {"path": "/protocolNull/stdout", "equals": "{\"protocol\":null,\"status\":\"validated\"}"},
-      {"path": "/protocolNull/stderr", "equals": ""},
-      {"path": "/protocolNull/exitCode", "equals": 0},
-      {"path": "/protocolNull/error/code", "equals": "invalid_protocol"},
-      {"path": "/protocolNull/error/message", "equals": "Unsupported CLI protocol version"},
-      {"path": "/protocolNull/value", "absent": true},
-      {"path": "/protocolScalars", "length": 5, "each": [
-        {"path": "/ok", "equals": false},
-        {"path": "/stderr", "equals": ""},
-        {"path": "/exitCode", "equals": 0},
-        {"path": "/error/code", "equals": "invalid_protocol"},
-        {"path": "/error/message", "equals": "CLI response must be a JSON object"},
-        {"path": "/value", "absent": true}
-      ]},
-      {"path": "/protocolScalars/0/stdout", "equals": "true"},
-      {"path": "/protocolScalars/1/stdout", "equals": "false"},
-      {"path": "/protocolScalars/2/stdout", "equals": "null"},
-      {"path": "/protocolScalars/3/stdout", "equals": "1"},
-      {"path": "/protocolScalars/4/stdout", "equals": "[]"},
-      {"path": "/protocolStatuses", "length": 5, "each": [
-        {"path": "/ok", "equals": false},
-        {"path": "/stderr", "equals": ""},
-        {"path": "/exitCode", "equals": 0},
-        {"path": "/error/code", "equals": "invalid_protocol"},
-        {"path": "/value", "absent": true}
-      ]},
-      {"path": "/composeStatuses", "length": 3},
-      {"path": "/composeStatuses/0/ok", "equals": true},
-      {"path": "/composeStatuses/0/value", "equals": {"protocol": 1, "status": "handed_off"}},
-      {"path": "/composeStatuses/1/ok", "equals": true},
-      {"path": "/composeStatuses/1/value", "equals": {"protocol": 1, "status": "cancelled"}},
-      {"path": "/composeStatuses/2/ok", "equals": false},
-      {"path": "/composeStatuses/2/error/code", "equals": "invalid_protocol"},
-      {"path": "/composeStatuses/2/value", "absent": true},
-      {"path": "/stagingProtocol", "length": 3},
-      {"path": "/stagingProtocol/0/ok", "equals": true},
-      {"path": "/stagingProtocol/0/value", "equals": {"protocol": 1, "status": "handed_off", "staging": {"token": "", "paths": [], "retained": false}}},
-      {"path": "/stagingProtocol/1/ok", "equals": false},
-      {"path": "/stagingProtocol/1/error/code", "equals": "invalid_protocol"},
-      {"path": "/stagingProtocol/2/ok", "equals": false},
-      {"path": "/stagingProtocol/2/error/code", "equals": "invalid_protocol"},
-      {"path": "/nativeError", "equals": {
-        "ok": false, "stdout": "", "stderr": "{\"protocol\":1,\"error\":{\"code\":\"backend_unavailable\",\"message\":\"Test refusal\",\"details\":{\"backend\":\"test\"}}}\n", "exitCode": 3,
-        "error": {"code": "backend_unavailable", "message": "Test refusal", "details": {"backend": "test"}}
-      }},
-      {"path": "/malformedError/ok", "equals": false},
-      {"path": "/malformedError/exitCode", "equals": 3},
-      {"path": "/malformedError/error/code", "equals": "invalid_protocol"},
-      {"path": "/stagedError/ok", "equals": false},
-      {"path": "/stagedError/exitCode", "equals": 3},
-      {"path": "/stagedError/error", "equals": {"code": "backend_error", "message": "Test refusal"}},
-      {"path": "/stagedError/staging", "equals": {"token": "0123456789abcdef0123456789abcdef", "paths": ["/owned/copy.txt"], "retained": true}},
-      {"path": "/cleanupInvalid", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "Cleanup requires a 32-character staging token returned by the native helper"}}},
-      {"path": "/workerCleanup", "equals": true},
-      {"path": "/workerResults", "length": 2, "each": [
-        {"path": "/ok", "equals": true},
-        {"path": "/state", "equals": "finished"},
-        {"path": "/finished", "equals": true},
-        {"path": "/result/ok", "equals": false},
-        {"path": "/result/error/code", "equals": "unsupported_architecture"},
-        {"path": "/result/stdout", "absent": true},
-        {"path": "/result/exitCode", "absent": true}
-      ]}
+      {
+        "path": "/invalid",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "subject must be Text"
+          }
+        }
+      },
+      {
+        "path": "/noInteractive",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "compose requires interactive:true after a user action"
+          }
+        }
+      },
+      {
+        "path": "/nullRequest",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "A request Object is required"
+          }
+        }
+      },
+      {
+        "path": "/nullCompose",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "A request Object is required"
+          }
+        }
+      },
+      {
+        "path": "/pollInvalid",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "The shared job returned by compose is required"
+          }
+        }
+      },
+      {
+        "path": "/requestTypes",
+        "length": 13,
+        "each": [
+          {
+            "path": "/ok",
+            "equals": false
+          },
+          {
+            "path": "/error/code",
+            "equals": "invalid_argument"
+          },
+          {
+            "path": "/stdout",
+            "absent": true
+          },
+          {
+            "path": "/exitCode",
+            "absent": true
+          }
+        ]
+      },
+      {
+        "path": "/nativeInvalid",
+        "equals": {
+          "ok": false,
+          "stdout": "",
+          "stderr": "{\"protocol\":1,\"error\":{\"code\":\"unsupported_field\",\"message\":\"apple-mail does not expose cc or bcc\"}}\n",
+          "exitCode": 2,
+          "error": {
+            "code": "unsupported_field",
+            "message": "apple-mail does not expose cc or bcc"
+          }
+        }
+      },
+      {
+        "path": "/capabilitiesClientMatches",
+        "equals": true
+      },
+      {
+        "path": "/capabilities/ok",
+        "equals": true
+      },
+      {
+        "path": "/capabilities/stderr",
+        "equals": ""
+      },
+      {
+        "path": "/capabilities/exitCode",
+        "equals": 0
+      },
+      {
+        "path": "/capabilities/value/protocol",
+        "equals": 1
+      },
+      {
+        "path": "/capabilities/value/interactiveRequired",
+        "equals": true
+      },
+      {
+        "path": "/capabilities/value/timeoutSeconds",
+        "equals": 540
+      },
+      {
+        "path": "/capabilities/value/deliveryConfirmed",
+        "equals": false
+      },
+      {
+        "path": "/capabilities/value/stagingCleanup",
+        "equals": true
+      },
+      {
+        "path": "/version/ok",
+        "equals": true
+      },
+      {
+        "path": "/version/stdout",
+        "equals": "{\"protocol\":1,\"version\":\"0.1.1\"}\n"
+      },
+      {
+        "path": "/version/stderr",
+        "equals": ""
+      },
+      {
+        "path": "/version/exitCode",
+        "equals": 0
+      },
+      {
+        "path": "/version/value",
+        "equals": {
+          "protocol": 1,
+          "version": "0.1.1"
+        }
+      },
+      {
+        "path": "/protocol/ok",
+        "equals": false
+      },
+      {
+        "path": "/protocol/stdout",
+        "equals": "not json"
+      },
+      {
+        "path": "/protocol/stderr",
+        "equals": ""
+      },
+      {
+        "path": "/protocol/exitCode",
+        "equals": 0
+      },
+      {
+        "path": "/protocol/error/code",
+        "equals": "invalid_protocol"
+      },
+      {
+        "path": "/protocolTypes",
+        "length": 2,
+        "each": [
+          {
+            "path": "/ok",
+            "equals": false
+          },
+          {
+            "path": "/stderr",
+            "equals": ""
+          },
+          {
+            "path": "/exitCode",
+            "equals": 0
+          },
+          {
+            "path": "/error/code",
+            "equals": "invalid_protocol"
+          },
+          {
+            "path": "/error/message",
+            "equals": "Unsupported CLI protocol version"
+          },
+          {
+            "path": "/value",
+            "absent": true
+          }
+        ]
+      },
+      {
+        "path": "/protocolTypes/0/stdout",
+        "equals": "{\"protocol\":true,\"status\":\"validated\"}"
+      },
+      {
+        "path": "/protocolTypes/1/stdout",
+        "equals": "{\"protocol\":false,\"status\":\"validated\"}"
+      },
+      {
+        "path": "/protocolNull/ok",
+        "equals": false
+      },
+      {
+        "path": "/protocolNull/stdout",
+        "equals": "{\"protocol\":null,\"status\":\"validated\"}"
+      },
+      {
+        "path": "/protocolNull/stderr",
+        "equals": ""
+      },
+      {
+        "path": "/protocolNull/exitCode",
+        "equals": 0
+      },
+      {
+        "path": "/protocolNull/error/code",
+        "equals": "invalid_protocol"
+      },
+      {
+        "path": "/protocolNull/error/message",
+        "equals": "Unsupported CLI protocol version"
+      },
+      {
+        "path": "/protocolNull/value",
+        "absent": true
+      },
+      {
+        "path": "/protocolScalars",
+        "length": 5,
+        "each": [
+          {
+            "path": "/ok",
+            "equals": false
+          },
+          {
+            "path": "/stderr",
+            "equals": ""
+          },
+          {
+            "path": "/exitCode",
+            "equals": 0
+          },
+          {
+            "path": "/error/code",
+            "equals": "invalid_protocol"
+          },
+          {
+            "path": "/error/message",
+            "equals": "CLI response must be a JSON object"
+          },
+          {
+            "path": "/value",
+            "absent": true
+          }
+        ]
+      },
+      {
+        "path": "/protocolScalars/0/stdout",
+        "equals": "true"
+      },
+      {
+        "path": "/protocolScalars/1/stdout",
+        "equals": "false"
+      },
+      {
+        "path": "/protocolScalars/2/stdout",
+        "equals": "null"
+      },
+      {
+        "path": "/protocolScalars/3/stdout",
+        "equals": "1"
+      },
+      {
+        "path": "/protocolScalars/4/stdout",
+        "equals": "[]"
+      },
+      {
+        "path": "/protocolStatuses",
+        "length": 5,
+        "each": [
+          {
+            "path": "/ok",
+            "equals": false
+          },
+          {
+            "path": "/stderr",
+            "equals": ""
+          },
+          {
+            "path": "/exitCode",
+            "equals": 0
+          },
+          {
+            "path": "/error/code",
+            "equals": "invalid_protocol"
+          },
+          {
+            "path": "/value",
+            "absent": true
+          }
+        ]
+      },
+      {
+        "path": "/composeStatuses",
+        "length": 3
+      },
+      {
+        "path": "/composeStatuses/0/ok",
+        "equals": true
+      },
+      {
+        "path": "/composeStatuses/0/value",
+        "equals": {
+          "protocol": 1,
+          "status": "handed_off"
+        }
+      },
+      {
+        "path": "/composeStatuses/1/ok",
+        "equals": true
+      },
+      {
+        "path": "/composeStatuses/1/value",
+        "equals": {
+          "protocol": 1,
+          "status": "cancelled"
+        }
+      },
+      {
+        "path": "/composeStatuses/2/ok",
+        "equals": false
+      },
+      {
+        "path": "/composeStatuses/2/error/code",
+        "equals": "invalid_protocol"
+      },
+      {
+        "path": "/composeStatuses/2/value",
+        "absent": true
+      },
+      {
+        "path": "/stagingProtocol",
+        "length": 3
+      },
+      {
+        "path": "/stagingProtocol/0/ok",
+        "equals": true
+      },
+      {
+        "path": "/stagingProtocol/0/value",
+        "equals": {
+          "protocol": 1,
+          "status": "handed_off",
+          "staging": {
+            "token": "",
+            "paths": [],
+            "retained": false
+          }
+        }
+      },
+      {
+        "path": "/stagingProtocol/1/ok",
+        "equals": false
+      },
+      {
+        "path": "/stagingProtocol/1/error/code",
+        "equals": "invalid_protocol"
+      },
+      {
+        "path": "/stagingProtocol/2/ok",
+        "equals": false
+      },
+      {
+        "path": "/stagingProtocol/2/error/code",
+        "equals": "invalid_protocol"
+      },
+      {
+        "path": "/nativeError",
+        "equals": {
+          "ok": false,
+          "stdout": "",
+          "stderr": "{\"protocol\":1,\"error\":{\"code\":\"backend_unavailable\",\"message\":\"Test refusal\",\"details\":{\"backend\":\"test\"}}}\n",
+          "exitCode": 3,
+          "error": {
+            "code": "backend_unavailable",
+            "message": "Test refusal",
+            "details": {
+              "backend": "test"
+            }
+          }
+        }
+      },
+      {
+        "path": "/malformedError/ok",
+        "equals": false
+      },
+      {
+        "path": "/malformedError/exitCode",
+        "equals": 3
+      },
+      {
+        "path": "/malformedError/error/code",
+        "equals": "invalid_protocol"
+      },
+      {
+        "path": "/stagedError/ok",
+        "equals": false
+      },
+      {
+        "path": "/stagedError/exitCode",
+        "equals": 3
+      },
+      {
+        "path": "/stagedError/error",
+        "equals": {
+          "code": "backend_error",
+          "message": "Test refusal"
+        }
+      },
+      {
+        "path": "/stagedError/staging",
+        "equals": {
+          "token": "0123456789abcdef0123456789abcdef",
+          "paths": [
+            "/owned/copy.txt"
+          ],
+          "retained": true
+        }
+      },
+      {
+        "path": "/cleanupInvalid",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "Cleanup requires a 32-character staging token returned by the native helper"
+          }
+        }
+      },
+      {
+        "path": "/workerCleanup",
+        "equals": true
+      },
+      {
+        "path": "/workerResults",
+        "length": 2,
+        "each": [
+          {
+            "path": "/ok",
+            "equals": true
+          },
+          {
+            "path": "/state",
+            "equals": "finished"
+          },
+          {
+            "path": "/finished",
+            "equals": true
+          },
+          {
+            "path": "/result/ok",
+            "equals": false
+          },
+          {
+            "path": "/result/error/code",
+            "equals": "unsupported_architecture"
+          },
+          {
+            "path": "/result/stdout",
+            "absent": true
+          },
+          {
+            "path": "/result/exitCode",
+            "absent": true
+          }
+        ]
+      }
     ]
   },
   "execution": {
-    "successPaths": ["/fileArgument", "/folderArgument", "/renamedExecutable", "/argumentProbe"],
+    "successPaths": [
+      "/fileArgument",
+      "/folderArgument",
+      "/renamedExecutable",
+      "/argumentProbe"
+    ],
     "assertions": [
-      {"path": "/typedPathsExact", "equals": true},
-      {"path": "/argumentProbe/stderr", "equals": ""},
-      {"path": "/argumentProbe/exitCode", "equals": 0},
-      {"path": "/renamedExecutable", "equals": {"ok": true, "stdout": "{\"protocol\":1,\"version\":\"0.1.0\"}\n", "stderr": "", "exitCode": 0}},
-      {"path": "/missing/ok", "equals": false},
-      {"path": "/missing/error/code", "equals": "missing_executable"},
-      {"path": "/missing/exitCode", "absent": true},
-      {"path": "/unsupported/ok", "equals": false},
-      {"path": "/unsupported/error/code", "equals": "unsupported_architecture"},
-      {"path": "/unsupported/exitCode", "absent": true},
-      {"path": "/launch/ok", "equals": false},
-      {"path": "/launch/error/code", "equals": "launch_failed"},
-      {"path": "/launch/exitCode", "absent": true},
-      {"path": "/fileTypedArgument", "equals": {
-        "ok": false, "stdout": "", "stderr": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n", "exitCode": 2,
-        "error": {"code": "cli_error", "message": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n"}
-      }},
-      {"path": "/folderTypedArgument", "equals": {
-        "ok": false, "stdout": "", "stderr": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n", "exitCode": 2,
-        "error": {"code": "cli_error", "message": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n"}
-      }},
-      {"path": "/rejectedArguments", "length": 9, "each": [
-        {"path": "/result", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "Arguments must be Text, File or Folder"}}}
-      ]},
-      {"path": "/rejectedNul", "length": 3, "each": [
-        {"path": "", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "NUL is not permitted in process arguments"}}}
-      ]},
-      {"path": "/missingFile", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "Executable File and arguments Collection are required"}}},
-      {"path": "/missingArguments", "equals": {"ok": false, "error": {"code": "invalid_argument", "message": "Executable File and arguments Collection are required"}}}
+      {
+        "path": "/typedPathsExact",
+        "equals": true
+      },
+      {
+        "path": "/argumentProbe/stderr",
+        "equals": ""
+      },
+      {
+        "path": "/argumentProbe/exitCode",
+        "equals": 0
+      },
+      {
+        "path": "/renamedExecutable",
+        "equals": {
+          "ok": true,
+          "stdout": "{\"protocol\":1,\"version\":\"0.1.1\"}\n",
+          "stderr": "",
+          "exitCode": 0
+        }
+      },
+      {
+        "path": "/missing/ok",
+        "equals": false
+      },
+      {
+        "path": "/missing/error/code",
+        "equals": "missing_executable"
+      },
+      {
+        "path": "/missing/exitCode",
+        "absent": true
+      },
+      {
+        "path": "/unsupported/ok",
+        "equals": false
+      },
+      {
+        "path": "/unsupported/error/code",
+        "equals": "unsupported_architecture"
+      },
+      {
+        "path": "/unsupported/exitCode",
+        "absent": true
+      },
+      {
+        "path": "/launch/ok",
+        "equals": false
+      },
+      {
+        "path": "/launch/error/code",
+        "equals": "launch_failed"
+      },
+      {
+        "path": "/launch/exitCode",
+        "absent": true
+      },
+      {
+        "path": "/fileTypedArgument",
+        "equals": {
+          "ok": false,
+          "stdout": "",
+          "stderr": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n",
+          "exitCode": 2,
+          "error": {
+            "code": "cli_error",
+            "message": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n"
+          }
+        }
+      },
+      {
+        "path": "/folderTypedArgument",
+        "equals": {
+          "ok": false,
+          "stdout": "",
+          "stderr": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n",
+          "exitCode": 2,
+          "error": {
+            "code": "cli_error",
+            "message": "{\"protocol\":1,\"error\":{\"code\":\"invalid_json\",\"message\":\"request must be strict JSON without duplicate keys\"}}\n"
+          }
+        }
+      },
+      {
+        "path": "/rejectedArguments",
+        "length": 9,
+        "each": [
+          {
+            "path": "/result",
+            "equals": {
+              "ok": false,
+              "error": {
+                "code": "invalid_argument",
+                "message": "Arguments must be Text, File or Folder"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "/rejectedNul",
+        "length": 3,
+        "each": [
+          {
+            "path": "",
+            "equals": {
+              "ok": false,
+              "error": {
+                "code": "invalid_argument",
+                "message": "NUL is not permitted in process arguments"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "path": "/missingFile",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "Executable File and arguments Collection are required"
+          }
+        }
+      },
+      {
+        "path": "/missingArguments",
+        "equals": {
+          "ok": false,
+          "error": {
+            "code": "invalid_argument",
+            "message": "Executable File and arguments Collection are required"
+          }
+        }
+      }
     ]
   }
 }
