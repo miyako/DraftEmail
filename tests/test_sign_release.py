@@ -41,6 +41,7 @@ class FakeTools:
         self.mutate_mount = False
         self.malformed_mount = False
         self.cleanup_fail = set()
+        self.stapler_failures = {}
         self.head = "a" * 40
 
     def run(self, args, **kwargs):
@@ -106,6 +107,9 @@ class FakeTools:
                     return subprocess.CompletedProcess(args, 1, "", "not mounted")
                 shutil.rmtree(self.mount / "UuidTest.4dbase")
         elif args[0] == signing.XCRUN:
+            if args[1] == "stapler" and self.stapler_failures.get(args[2]):
+                code, diagnostic = self.stapler_failures[args[2]].pop(0)
+                return subprocess.CompletedProcess(args, code, "", diagnostic)
             if args[1:3] == ["notarytool", "submit"]:
                 assert kwargs["timeout"] == 1860
                 out = json.dumps({"id": self.identifier, "status": self.status})
@@ -375,6 +379,82 @@ class SigningTests(unittest.TestCase):
                 self.sign()
             self.assertTrue(any(args[1] == "detach" for args in self.tools.calls))
             self.assert_clean()
+
+    def test_stapler_network_recovery_retries_only_the_failed_action(self):
+        diagnostic = ('Error Domain=NSURLErrorDomain Code=-1005 '
+                      '"The network connection was lost." ' + self.secrets["NOTARYTOOL_PASSWORD"])
+        self.tools.stapler_failures = {
+            "staple": [(68, diagnostic)],
+            "validate": [(68, diagnostic), (68, diagnostic)],
+        }
+        with patch.object(signing.time, "sleep") as sleep, \
+                contextlib.redirect_stderr(io.StringIO()) as warnings:
+            proof = self.sign()
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [5, 5, 15])
+        self.assertEqual([args[2] for args in self.tools.calls if args[1] == "stapler"],
+                         ["staple", "staple", "validate", "validate", "validate"])
+        self.assertEqual(sum(args[1:3] == ["notarytool", "submit"]
+                             for args in self.tools.calls), 1)
+        self.assertTrue(proof["dmg"]["validated"])
+        self.assertEqual(warnings.getvalue().count("Retrying "), 3)
+        self.assertIn("[REDACTED]", warnings.getvalue())
+        self.assert_no_leak(warnings.getvalue())
+        self.assertEqual(list((self.root / "build").glob("apple-signing-*")), [])
+
+    def test_stapler_network_exhaustion_fails_closed_and_cleans_up(self):
+        for action in ("staple", "validate"):
+            self.tools = FakeTools(self.secrets)
+            self.tools.stapler_failures[action] = [
+                (68, "Error Domain=NSURLErrorDomain Code=-1005 connection lost")
+            ] * 3
+            with self.subTest(action=action), patch.object(signing.time, "sleep") as sleep, \
+                    contextlib.redirect_stderr(io.StringIO()), \
+                    self.assertRaisesRegex(ValueError, "exit 68"):
+                self.sign()
+            self.assertEqual([call.args[0] for call in sleep.call_args_list], [5, 15])
+            self.assertEqual(sum(args[1:3] == ["stapler", action]
+                                 for args in self.tools.calls), 3)
+            self.assertFalse(any(args[1] == "attach" for args in self.tools.calls))
+            self.assertTrue(any(args[1] == "delete-keychain" for args in self.tools.calls))
+            self.assert_clean()
+
+    def test_stapler_permanent_and_unclassified_errors_are_not_retried(self):
+        for action in ("staple", "validate"):
+            for code, diagnostic in (
+                    (68, "CloudKit record not found"),
+                    (68, "Error Domain=NSURLErrorDomain Code=-1200 TLS failure"),
+                    (65, "Error Domain=NSURLErrorDomain Code=-1005 connection lost"),
+                    (68, "ticket validation failed")):
+                self.tools = FakeTools(self.secrets)
+                self.tools.stapler_failures[action] = [(code, diagnostic)]
+                with self.subTest(action=action, code=code, diagnostic=diagnostic), \
+                        patch.object(signing.time, "sleep") as sleep, \
+                        self.assertRaisesRegex(ValueError, f"exit {code}"):
+                    self.sign()
+                sleep.assert_not_called()
+                self.assertEqual(sum(args[1:3] == ["stapler", action]
+                                     for args in self.tools.calls), 1)
+                self.assert_clean()
+
+    def test_stapler_transient_network_codes_and_launch_errors(self):
+        commands = signing.Commands(self.env, self.secrets)
+        for code in (1001, 1003, 1004, 1005, 1006, 1009):
+            result = subprocess.CompletedProcess(
+                [], 68, "", f"Error Domain=NSURLErrorDomain Code=-{code}")
+            error = signing.CommandError("DMG staple", result, self.secrets)
+            with self.subTest(code=code), \
+                    patch.object(commands, "run", side_effect=[error, ("", ""), ("", "")]) as run, \
+                    patch.object(signing.time, "sleep") as sleep, \
+                    contextlib.redirect_stderr(io.StringIO()):
+                signing.staple_dmg(commands, Path("test.dmg"))
+            sleep.assert_called_once_with(5)
+            self.assertEqual(run.call_count, 3)
+        with patch.object(commands, "run", side_effect=signing.SigningError("tool timed out")) as run, \
+                patch.object(signing.time, "sleep") as sleep, \
+                self.assertRaisesRegex(ValueError, "tool timed out"):
+            signing.staple_dmg(commands, Path("test.dmg"))
+        run.assert_called_once()
+        sleep.assert_not_called()
 
     def test_signer_cannot_change_windows_data(self):
         self.tools.immutable_change = True

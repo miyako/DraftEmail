@@ -166,6 +166,12 @@ AGENTS.md for the signing lifecycle. Do not copy
 credentials from another repository. No release or tag is required for
 development.
 
+DMG stapling and staple validation each retry at most twice, after 5 and 15
+seconds, only for exit 68 with an explicit transient `NSURLErrorDomain`
+network error. Retry diagnostics are credential-redacted. Other failures and
+exhausted retries stop signing; successful validation and final-ZIP host
+acceptance remain mandatory.
+
 Once an accepted asset exists, manually install its unpacked `DraftEmail.4dbase`
 in the host's `Components/` folder. Signed test artifacts are not published
 Dependency manager releases. Dependency-manager installation must be tested
