@@ -160,7 +160,8 @@ commits synchronized metadata to main, builds that exact revision and only
 creates a tag/release after the required final-package gates. Publish signing
 is controlled only by `release-policy.json`: an exact version entry requires
 signing/notarization; unlisted versions are unsigned. There is no Publish
-dispatch override. The separate signed-test CI path is unchanged. See
+dispatch override. The planned first public release, `0.1.2`, requires Apple
+signing/notarization under this policy. The separate signed-test CI path is unchanged. See
 AGENTS.md for the signing lifecycle. Do not copy
 credentials from another repository. No release or tag is required for
 development.
