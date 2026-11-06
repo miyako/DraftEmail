@@ -28,6 +28,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 import zipfile
 
@@ -46,6 +47,7 @@ HDIUTIL = "/usr/bin/hdiutil"
 XCRUN = "/usr/bin/xcrun"
 GIT = "/usr/bin/git"
 TRUSTED_TOOLS = {SECURITY, CODESIGN, HDIUTIL, XCRUN, GIT}
+STAPLER_RETRY_DELAYS = (5, 15)
 
 
 class SigningError(ValueError):
@@ -54,6 +56,7 @@ class SigningError(ValueError):
 
 class CommandError(SigningError):
     def __init__(self, label, result, secrets):
+        self.returncode = result.returncode
         self.stdout = result.stdout
         details = redact(result.stderr + "\n" + result.stdout, secrets)
         super().__init__(f"{label}: exit {result.returncode}: {details.strip()}")
@@ -337,6 +340,27 @@ def submission_uuid(value):
     return str(parsed)
 
 
+def staple_dmg(commands, dmg):
+    for action, label in (("staple", "DMG staple"), ("validate", "DMG staple validate")):
+        for attempt in range(len(STAPLER_RETRY_DELAYS) + 1):
+            try:
+                commands.run(label, [XCRUN, "stapler", action, dmg])
+                break
+            except CommandError as error:
+                # Exit 68 alone also covers permanent CloudKit/ticket failures.
+                transient = error.returncode == 68 and re.search(
+                    r"\bNSURLErrorDomain Code=-(?:1001|1003|1004|1005|1006|1009)\b",
+                    str(error),
+                )
+                if not transient or attempt == len(STAPLER_RETRY_DELAYS):
+                    raise
+                delay = STAPLER_RETRY_DELAYS[attempt]
+                print(f"{error}\nRetrying {label} in {delay}s "
+                      f"(attempt {attempt + 2}/{len(STAPLER_RETRY_DELAYS) + 1}).",
+                      file=sys.stderr)
+                time.sleep(delay)
+
+
 def notarize(commands, dmg, secrets):
     command_error = None
     try:
@@ -383,8 +407,7 @@ def notarize(commands, dmg, secrets):
         raise SigningError(redact(prefix + "notarytool: status is not Accepted; " + "; ".join(details), secrets))
     if command_error:
         raise command_error
-    commands.run("DMG staple", [XCRUN, "stapler", "staple", dmg])
-    commands.run("DMG staple validate", [XCRUN, "stapler", "validate", dmg])
+    staple_dmg(commands, dmg)
     return identifier
 
 
