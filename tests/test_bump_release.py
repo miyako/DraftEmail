@@ -1,4 +1,6 @@
-"""Release changes use isolated copies of the initialized DraftEmail destination."""
+"""Release changes use isolated destination copies normalized to a 0.1.0 baseline."""
+import contextlib
+import io
 import json
 import os
 from pathlib import Path
@@ -13,24 +15,27 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import bump_release
+import sign_release
 
 
 class BumpReleaseTests(unittest.TestCase):
+    source_root = ROOT
+
     def setUp(self):
         self.root = ROOT / (".bump-release-test-" + uuid.uuid4().hex)
         self.root.mkdir()
         self.addCleanup(shutil.rmtree, self.root)
         for name in ("component", "cli", "tests/host"):
-            shutil.copytree(ROOT / name, self.root / name,
+            shutil.copytree(self.source_root / name, self.root / name,
                             ignore=shutil.ignore_patterns(
                                 "DerivedData", "userPreferences.*", "CompilerIntermediateFiles",
                                 "Libraries", "bin", "__pycache__"))
-        for name in ("template.json", "package.json", "README.md"):
-            shutil.copy2(ROOT / name, self.root / name)
+        for name in ("template.json", "package.json", "README.md", "release-policy.json"):
+            shutil.copy2(self.source_root / name, self.root / name)
         (self.root / "docs").mkdir()
-        shutil.copy2(ROOT / "docs/PROTOCOL.md", self.root / "docs/PROTOCOL.md")
-        shutil.copy2(ROOT / "tests/test_cli.py", self.root / "tests/test_cli.py")
-        shutil.copy2(ROOT / "tests/cli-contract.json", self.root / "tests/cli-contract.json")
+        shutil.copy2(self.source_root / "docs/PROTOCOL.md", self.root / "docs/PROTOCOL.md")
+        shutil.copy2(self.source_root / "tests/test_cli.py", self.root / "tests/test_cli.py")
+        shutil.copy2(self.source_root / "tests/cli-contract.json", self.root / "tests/cli-contract.json")
         self.git("init", "-q")
         self.git("config", "user.name", "Release fixture")
         self.git("config", "user.email", "release-fixture@example.invalid")
@@ -39,6 +44,8 @@ class BumpReleaseTests(unittest.TestCase):
         self.environment = patch.dict(os.environ, {"GITHUB_REPOSITORY": "miyako/DraftEmail"})
         self.environment.start()
         self.addCleanup(self.environment.stop)
+        # Validate the copied live surfaces before resetting only their registered versions.
+        bump_release.apply(self.root, "0.1.0")
 
     def git(self, *args):
         return subprocess.run(["git", *args], cwd=self.root, check=True,
@@ -47,6 +54,14 @@ class BumpReleaseTests(unittest.TestCase):
     def snapshot(self):
         return {str(p.relative_to(self.root)): p.read_bytes()
                 for p in self.root.rglob("*") if p.is_file() and ".git" not in p.parts}
+
+    def replace_fixture_text(self, relative, old, new):
+        path = self.root / relative
+        text = path.read_text()
+        self.assertIn(old, text, relative)
+        changed = text.replace(old, new)
+        self.assertNotEqual(text, changed, relative)
+        path.write_text(changed)
 
     def test_destination_cpp_metadata_synchronization_and_idempotency(self):
         config = json.loads((self.root / "template.json").read_text())
@@ -108,9 +123,8 @@ class BumpReleaseTests(unittest.TestCase):
         for tags in (["v1.2.3"], ["v1.2.3", "v2.0.0-rc.1"]):
             self.assertEqual(bump_release.next_version(self.root, "patch", tags=tags),
                              {"version": "1.2.4", "tag": "v1.2.4"})
-        contract = self.root / "tests/host/contract.json"
-        contract.write_text(contract.read_text().replace('\\"version\\":\\"1.2.4\\"',
-                                                         '\\"version\\":\\"1.2.3\\"'))
+        self.replace_fixture_text("tests/host/contract.json",
+                                  '\\"version\\":\\"1.2.4\\"', '\\"version\\":\\"1.2.3\\"')
         before = self.snapshot()
         with self.assertRaisesRegex(ValueError, "inconsistent"):
             bump_release.next_version(self.root, "patch", tags=["v1.2.3"])
@@ -152,9 +166,8 @@ class BumpReleaseTests(unittest.TestCase):
     def test_stage_validation_failure_neither_writes_nor_stages(self):
         self.git("add", "--", ".")
         self.git("commit", "-q", "-m", "initialized fixture")
-        contract = self.root / "tests/host/contract.json"
-        contract.write_text(contract.read_text().replace('\\"version\\":\\"0.1.0\\"',
-                                                         '\\"version\\":\\"0.0.1\\"'))
+        self.replace_fixture_text("tests/host/contract.json",
+                                  '\\"version\\":\\"0.1.0\\"', '\\"version\\":\\"0.0.1\\"')
         before = self.snapshot()
         with self.assertRaisesRegex(ValueError, "inconsistent"):
             bump_release.apply(self.root, "0.2.0", stage=True)
@@ -164,7 +177,7 @@ class BumpReleaseTests(unittest.TestCase):
     def test_uninitialized_original_and_exact_destination_guards(self):
         metadata = self.root / "template.json"
         configured = metadata.read_text()
-        metadata.write_text(configured.replace('"initialized": true', '"initialized": false'))
+        self.replace_fixture_text("template.json", '"initialized": true', '"initialized": false')
         before = self.snapshot()
         with self.assertRaises(ValueError):
             bump_release.apply(self.root, "1.0.0")
@@ -203,8 +216,7 @@ class BumpReleaseTests(unittest.TestCase):
         for relative, (old, new) in targets.items():
             path = self.root / relative
             text = path.read_text()
-            self.assertIn(old, text)
-            path.write_text(text.replace(old, new))
+            self.replace_fixture_text(relative, old, new)
             before = self.snapshot()
             with self.subTest(relative=relative), self.assertRaises(ValueError):
                 bump_release.apply(self.root, "1.2.3")
@@ -268,9 +280,7 @@ class BumpReleaseTests(unittest.TestCase):
                          + unrelated)
 
     def test_present_protocol_document_requires_registered_version_row(self):
-        protocol_doc = self.root / "docs/PROTOCOL.md"
-        text = protocol_doc.read_text()
-        protocol_doc.write_text(text.replace("`--version`", "`obsolete-version`"))
+        self.replace_fixture_text("docs/PROTOCOL.md", "`--version`", "`obsolete-version`")
         before = self.snapshot()
         with self.assertRaisesRegex(ValueError, "missing supported component version surface"):
             bump_release.apply(self.root, "0.2.0", stage=True)
@@ -301,10 +311,8 @@ class BumpReleaseTests(unittest.TestCase):
         self.assertEqual(self.git("tag", "--list"), tags)
 
     def test_missing_cpp_version_constant_fails_without_writes(self):
-        source = self.root / "cli/main.cpp"
-        text = source.read_text()
-        self.assertIn("constexpr auto kVersion", text)
-        source.write_text(text.replace("constexpr auto kVersion", "constexpr auto unregisteredVersion"))
+        self.replace_fixture_text("cli/main.cpp", "constexpr auto kVersion",
+                                  "constexpr auto unregisteredVersion")
         before = self.snapshot()
         with self.assertRaisesRegex(ValueError, "missing supported CLI version"):
             bump_release.apply(self.root, "2.3.4")
@@ -313,9 +321,9 @@ class BumpReleaseTests(unittest.TestCase):
     def test_cpp_constant_and_cmake_project_version(self):
         source = self.root / "cli/main.cpp"
         cmake = self.root / "cli/CMakeLists.txt"
-        cmake.write_text(cmake.read_text().replace(
-            "project(draft-email-cli LANGUAGES CXX)", "project(draft-email-cli VERSION 0.1.0 LANGUAGES CXX)")
-                        + '\nset(CLI_VERSION "0.1.0")\n')
+        self.replace_fixture_text("cli/CMakeLists.txt", "project(draft-email-cli LANGUAGES CXX)",
+                                  "project(draft-email-cli VERSION 0.1.0 LANGUAGES CXX)")
+        cmake.write_text(cmake.read_text() + '\nset(CLI_VERSION "0.1.0")\n')
         bump_release.apply(self.root, "2.3.4")
         self.assertRegex(source.read_text(), r'kVersion\s*=\s*"2\.3\.4"')
         self.assertIn("project(draft-email-cli VERSION 2.3.4 LANGUAGES CXX)", cmake.read_text())
@@ -332,7 +340,9 @@ class BumpReleaseTests(unittest.TestCase):
                     '"version": "$VERSION"', '"version": "bad"'))):
             path = self.root / relative
             text = path.read_text()
-            path.write_text(edit(text))
+            changed = edit(text)
+            self.assertNotEqual(text, changed, relative)
+            path.write_text(changed)
             before = self.snapshot()
             with self.subTest(relative=relative), self.assertRaises(ValueError):
                 bump_release.apply(self.root, "2.3.4")
@@ -372,6 +382,44 @@ class BumpReleaseTests(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
         source.unlink()
         source.write_bytes(content)
+
+
+class BumpedSourceFixtureTests(unittest.TestCase):
+    def fixture(self):
+        fixture = BumpReleaseTests()
+        self.addCleanup(fixture.doCleanups)
+        fixture.setUp()
+        return fixture
+
+    def test_release_suite_after_source_version_bumps(self):
+        fixture = self.fixture()
+        for version in ("0.1.1", "2.3.4"):
+            with self.subTest(version=version):
+                bump_release.apply(fixture.root, version)
+                before = fixture.snapshot()
+                with patch.object(BumpReleaseTests, "source_root", fixture.root):
+                    suite = unittest.defaultTestLoader.loadTestsFromTestCase(BumpReleaseTests)
+                    result = unittest.TestResult()
+                    suite.run(result)
+                self.assertEqual(result.testsRun, suite.countTestCases())
+                self.assertTrue(result.wasSuccessful(), result.failures + result.errors)
+                self.assertEqual(before, fixture.snapshot())
+
+    def test_patch_after_unpublished_0_1_1_requires_apple_signing(self):
+        fixture = self.fixture()
+        bump_release.apply(fixture.root, "0.1.1")
+        self.assertEqual(fixture.git("tag", "--list"), "")
+        candidate = bump_release.next_version(fixture.root, "patch")
+        self.assertEqual(candidate, {"version": "0.1.2", "tag": "v0.1.2"})
+        policy = (fixture.root / "release-policy.json").read_bytes()
+        bump_release.apply(fixture.root, candidate["version"])
+        self.assertEqual((fixture.root / "release-policy.json").read_bytes(), policy)
+        output = fixture.root / "github-output"
+        with contextlib.redirect_stdout(io.StringIO()) as text:
+            self.assertTrue(sign_release.policy_command(
+                fixture.root, {"GITHUB_OUTPUT": str(output)}))
+        self.assertEqual(text.getvalue(), "apple-notarized\n")
+        self.assertEqual(output.read_text(), "apple_signing=true\n")
 
 
 if __name__ == "__main__":
