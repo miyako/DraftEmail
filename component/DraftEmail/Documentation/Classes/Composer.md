@@ -9,7 +9,7 @@ as a separate process. No 4D plug-in is used or installed. Use
 
 | Method | Result |
 | --- | --- |
-| `version() : Object` | Synchronous protocol/version check; `value:{protocol:1,version:"0.1.2"}` |
+| `version() : Object` | Synchronous protocol/version check; `value:{protocol:1,version:"0.1.3"}` |
 | `capabilities() : Object` | Synchronous backend/platform capabilities, not a permission grant or delivery check |
 | `validate(request : Object) : Object` | Synchronous, noninteractive validation; `value:{protocol:1,status:"validated"}` |
 | `compose(request : Object) : Object` | **Nonblocking dispatch**, returning `{ok:true,jobId:Text,job:Object}`; no synchronous native composition on the calling/UI process |

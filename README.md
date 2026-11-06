@@ -63,7 +63,7 @@ unparsed header lines. HTML is not supported.
 
 | Invocation | Contract |
 | --- | --- |
-| `draft-email-cli --version` | 0 / `{"protocol":1,"version":"0.1.2"}` + LF / empty stderr |
+| `draft-email-cli --version` | 0 / `{"protocol":1,"version":"0.1.3"}` + LF / empty stderr |
 | `draft-email-cli capabilities` | Non-interactive backend and field capability information |
 | `draft-email-cli validate --request JSON` | Non-interactive validation; `{"protocol":1,"status":"validated"}` + LF on success |
 | `draft-email-cli compose --request JSON` | Explicitly interactive; handoff, observable cancellation, or error; never automatic sending |
