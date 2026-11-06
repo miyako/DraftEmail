@@ -189,7 +189,7 @@ jobs:
           from pathlib import Path
           version = json.loads(Path("template.json").read_text())["version"]
           with open(os.environ["GITHUB_ENV"], "a") as output:
-              output.write("RELEASE_TAG=v" + version + "\n")
+              output.write("RELEASE_TAG=" + version + "\n")
       - uses: actions/download-artifact@v4
         with:
           name: cli-macos-x64

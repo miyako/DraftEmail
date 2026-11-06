@@ -74,7 +74,7 @@ class BumpReleaseTests(unittest.TestCase):
         result = bump_release.apply(self.root, "1.2.3")
         changed = sorted(name for name, value in self.snapshot().items() if before[name] != value)
         self.assertEqual(result["changed_paths"], changed)
-        self.assertEqual(result["tag"], "v1.2.3")
+        self.assertEqual(result["tag"], "1.2.3")
         required = {
             "template.json", "package.json", "cli/main.cpp", "README.md", "docs/PROTOCOL.md",
             "component/DraftEmail/Documentation/Classes/Composer.md",
@@ -103,26 +103,52 @@ class BumpReleaseTests(unittest.TestCase):
         self.assertEqual(snapshot, self.snapshot())
 
     def test_next_highest_stable_numeric_tag_and_modes(self):
-        for tag in ("v1.9.9", "v1.10.2", "v1.10.1", "v20.0.0-rc.1", "v9.0.0+build",
-                    "v01.0.0", "2.0.0", "unrelated"):
+        for tag in ("1.9.9", "1.10.2", "1.10.1", "20.0.0-rc.1", "9.0.0+build",
+                    "01.0.0", "v01.0.0", "v20.0.0-rc.1", "v9.0.0+build", "20R3.2", "unrelated"):
             self.git("tag", tag)
         before = self.snapshot()
         for mode, version in (("patch", "1.10.3"), ("minor", "1.11.0"), ("major", "2.0.0")):
             self.assertEqual(bump_release.next_version(self.root, mode),
-                             {"version": version, "tag": "v" + version})
+                             {"version": version, "tag": version})
         self.assertEqual(before, self.snapshot())
+
+    def test_legacy_and_mixed_tag_history_uses_highest_baseline_without_rewriting(self):
+        for tag in ("v1.10.2", "1.9.9"):
+            self.git("tag", tag)
+        self.assertEqual(bump_release.next_version(self.root, "patch"),
+                         {"version": "1.10.3", "tag": "1.10.3"})
+        self.git("tag", "1.11.0")
+        before = self.git("show-ref", "--tags")
+        self.assertEqual(bump_release.next_version(self.root, "patch"),
+                         {"version": "1.11.1", "tag": "1.11.1"})
+        self.assertEqual(self.git("show-ref", "--tags"), before)
+        self.assertEqual(bump_release.next_version(self.root, "minor", tags=["v2.3.4"]),
+                         {"version": "2.4.0", "tag": "2.4.0"})
+
+    def test_published_draftemail_legacy_tag_plans_only_a_new_bare_version(self):
+        bump_release.apply(self.root, "0.1.3")
+        self.git("tag", "v0.1.3")
+        before = self.snapshot()
+        tags = self.git("show-ref", "--tags")
+        policy = (self.root / "release-policy.json").read_bytes()
+        self.assertEqual(bump_release.next_version(self.root, "patch"),
+                         {"version": "0.1.4", "tag": "0.1.4"})
+        self.assertEqual(self.git("show-ref", "--tags"), tags)
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual((self.root / "release-policy.json").read_bytes(), policy)
 
     def test_no_stable_tag_bumps_configured_base(self):
         bump_release.apply(self.root, "3.4.5")
-        self.git("tag", "v99.0.0-preview")
+        for tag in ("99.0.0-preview", "v99.0.0-preview", "20R3.2"):
+            self.git("tag", tag)
         for mode, version in (("patch", "3.4.6"), ("minor", "3.5.0"), ("major", "4.0.0")):
             self.assertEqual(bump_release.next_version(self.root, mode)["version"], version)
 
     def test_retry_equal_version_validates_all_surfaces_and_does_not_bump_again(self):
         bump_release.apply(self.root, "1.2.4")
-        for tags in (["v1.2.3"], ["v1.2.3", "v2.0.0-rc.1"]):
+        for tags in (["1.2.3"], ["v1.2.3"], ["1.2.3", "v1.2.3", "2.0.0-rc.1"]):
             self.assertEqual(bump_release.next_version(self.root, "patch", tags=tags),
-                             {"version": "1.2.4", "tag": "v1.2.4"})
+                             {"version": "1.2.4", "tag": "1.2.4"})
         self.replace_fixture_text("tests/host/contract.json",
                                   '\\"version\\":\\"1.2.4\\"', '\\"version\\":\\"1.2.3\\"')
         before = self.snapshot()
@@ -362,7 +388,8 @@ class BumpReleaseTests(unittest.TestCase):
         self.assertTrue(result["changed_paths"])
         lines = output.read_text().splitlines()
         self.assertIn("version=0.2.0", lines)
-        self.assertIn("tag=v0.2.0", lines)
+        self.assertIn("tag=0.2.0", lines)
+        self.assertFalse(any(line.startswith("tag=v") for line in lines))
         self.assertEqual(json.loads(next(line.split("=", 1)[1] for line in lines
                                        if line.startswith("changed_paths="))), result["changed_paths"])
         self.assertEqual(self.git("diff", "--cached", "--name-only").splitlines(), result["changed_paths"])
@@ -410,7 +437,7 @@ class BumpedSourceFixtureTests(unittest.TestCase):
         bump_release.apply(fixture.root, "0.1.1")
         self.assertEqual(fixture.git("tag", "--list"), "")
         candidate = bump_release.next_version(fixture.root, "patch")
-        self.assertEqual(candidate, {"version": "0.1.2", "tag": "v0.1.2"})
+        self.assertEqual(candidate, {"version": "0.1.2", "tag": "0.1.2"})
         policy = (fixture.root / "release-policy.json").read_bytes()
         bump_release.apply(fixture.root, candidate["version"])
         self.assertEqual((fixture.root / "release-policy.json").read_bytes(), policy)
