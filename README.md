@@ -157,9 +157,11 @@ this secret-bearing job. Interactive email testing remains separate.
 
 Publication requires separate authorization. Publish accepts patch/minor/major,
 commits synchronized metadata to main, builds that exact revision and only
-creates a tag/release after the required final-package gates. Signing is
-unsigned by default; `release-policy.json` and the explicit signed path
-documented in AGENTS.md govern opt-in signing/notarization. Do not copy
+creates a tag/release after the required final-package gates. Publish signing
+is controlled only by `release-policy.json`: an exact version entry requires
+signing/notarization; unlisted versions are unsigned. There is no Publish
+dispatch override. The separate signed-test CI path is unchanged. See
+AGENTS.md for the signing lifecycle. Do not copy
 credentials from another repository. No release or tag is required for
 development.
 
