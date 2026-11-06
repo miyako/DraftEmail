@@ -1,0 +1,250 @@
+{
+	"_method_": {},
+	"cs.DraftEmail": {
+		"_CLI": {
+			"new()": {
+				"Syntax": "**.new**( *executableName* : Text; *target* : Text )",
+				"Params": [
+					[
+						"executableName",
+						"Text",
+						"->"
+					],
+					[
+						"target",
+						"Text",
+						"->"
+					]
+				],
+				"Summary": ""
+			}
+		},
+		"ComposeRequest": {
+			"new()": {
+				"Syntax": "**.new**( *client* : Text )",
+				"Params": [
+					[
+						"client",
+						"Text",
+						"->"
+					]
+				],
+				"Summary": ""
+			}
+		},
+		"Composer": {
+			"new()": {
+				"Syntax": "**.new**( *target* : Text )",
+				"Params": [
+					[
+						"target",
+						"Text",
+						"->"
+					]
+				],
+				"Summary": ""
+			}
+		}
+	},
+	"_CLI": {
+		"execute()": {
+			"Syntax": "**.execute**( *arguments* : Collection; *timeout* : Integer )->result : Object",
+			"Params": [
+				[
+					"arguments",
+					"Collection",
+					"->"
+				],
+				[
+					"timeout",
+					"Integer",
+					"->"
+				],
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"get compiled()": {
+			"Syntax": "**.get compiled**()->compiled : Boolean",
+			"Params": [
+				[
+					"compiled",
+					"Boolean",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"target": {
+			"Syntax": "target : Text"
+		},
+		"executableName": {
+			"Syntax": "executableName : Text"
+		}
+	},
+	"ComposeRequest": {
+		"interactive": {
+			"Syntax": "interactive : Boolean"
+		},
+		"attachments": {
+			"Syntax": "attachments : Collection"
+		},
+		"body": {
+			"Syntax": "body : Text"
+		},
+		"bcc": {
+			"Syntax": "bcc : Collection"
+		},
+		"subject": {
+			"Syntax": "subject : Text"
+		},
+		"cc": {
+			"Syntax": "cc : Collection"
+		},
+		"to": {
+			"Syntax": "to : Collection"
+		},
+		"client": {
+			"Syntax": "client : Text"
+		},
+		"protocol": {
+			"Syntax": "protocol : Integer"
+		}
+	},
+	"Composer": {
+		"poll()": {
+			"Syntax": "**.poll**( *job* : Object )->result : Object",
+			"Params": [
+				[
+					"job",
+					"Object",
+					"->"
+				],
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"capabilities()": {
+			"Syntax": "**.capabilities**()->result : Object",
+			"Params": [
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"validate()": {
+			"Syntax": "**.validate**( *request* : Object )->result : Object",
+			"Params": [
+				[
+					"request",
+					"Object",
+					"->"
+				],
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"cleanup()": {
+			"Syntax": "**.cleanup**( *token* : Text )->result : Object",
+			"Params": [
+				[
+					"token",
+					"Text",
+					"->"
+				],
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"compose()": {
+			"Syntax": "**.compose**( *request* : Object )->result : Object",
+			"Params": [
+				[
+					"request",
+					"Object",
+					"->"
+				],
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"version()": {
+			"Syntax": "**.version**()->result : Object",
+			"Params": [
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		}
+	},
+	"_Process": {
+		"execute()": {
+			"Syntax": "**.execute**( *file* : 4D.File; *arguments* : Collection; *timeout* : Integer )->result : Object",
+			"Params": [
+				[
+					"file",
+					"4D.File",
+					"->"
+				],
+				[
+					"arguments",
+					"Collection",
+					"->"
+				],
+				[
+					"timeout",
+					"Integer",
+					"->"
+				],
+				[
+					"result",
+					"Object",
+					"<-"
+				]
+			],
+			"Summary": ""
+		},
+		"quote()": {
+			"Syntax": "**.quote**( *argument* : Text )->quoted : Text",
+			"Params": [
+				[
+					"argument",
+					"Text",
+					"->"
+				],
+				[
+					"quoted",
+					"Text",
+					"<-"
+				]
+			],
+			"Summary": ""
+		}
+	}
+}

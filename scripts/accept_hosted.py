@@ -30,7 +30,8 @@ def accept(root, repository, tool4d, tag=None, require_apple_signing=False):
         "steps": {name: {"status": "not_run", "reason": "not exercised"} for name in (
             *("cli_test_" + target for target in TARGETS), "assembly", "source_host",
             "compile", "package", "unsigned_compiled_host", "compiled_host", "native_intel_4d", "windows_4d",
-            "signing", "signing_proof", "release_download")},
+            "signing", "signing_proof", "release_download", "apple_mail_interactive",
+            "classic_outlook_interactive", "provider_configuration")},
     }
 
     def save():

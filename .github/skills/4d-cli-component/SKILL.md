@@ -73,8 +73,10 @@ or packaging; do not turn an SDK requirement into a component resource.
    Unsigned free tool4d local compilation needs no license/signing secrets.
    Manual initialized CI with `FOURD_ENABLED=true` retains an accepted compiled
    ZIP and adjacent evidence without publishing. Release signing is implemented:
-   `release-policy.json.apple_notarized_versions` defaults to unsigned; a listed
-   version or manual `require_apple_signing` opts in. Only that branch receives
+   `release-policy.json.apple_notarized_versions` defaults to unsigned; Publish
+   signs only listed versions and has no manual signing override. The separate
+   signed-test CI path can explicitly require signing without publication.
+   Only the resolved signed path receives
    the seven secrets, signs an isolated copy, notarizes/staples its DMG, repacks
    the ZIP from the final mounted DMG and reruns exact final ZIP compiled-host
    acceptance. Missing credentials or signing errors never downgrade to unsigned.

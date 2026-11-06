@@ -26,7 +26,8 @@ def accept(root, repository, tool4d, cross=False):
     names = ["unit", "icons", *("cli_build_" + target for target in TARGETS),
              *("cli_test_" + target for target in TARGETS), "cli_rosetta",
              "dependencies", "assembly", "source_host", "compile", "package", "compiled_host",
-             "hosted_cli", "native_intel_4d", "windows_4d", "release_download", "signing"]
+             "hosted_cli", "native_intel_4d", "windows_4d", "release_download", "signing",
+             "apple_mail_interactive", "classic_outlook_interactive", "provider_configuration"]
     report = {"schema": 1, "scope": "local", "release_ready": False, "result": "partial",
               "started_at": datetime.now(timezone.utc).isoformat(),
               "finished": False, "commit": commit(root), "steps": {name: {"status": "not_run", "reason": "not exercised"}

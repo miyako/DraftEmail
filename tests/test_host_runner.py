@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import unittest
 import uuid
 from unittest.mock import patch
@@ -17,10 +18,16 @@ CONTRACT = json.loads((ROOT / "tests/host/contract.json").read_text(encoding="ut
 
 
 def valid_status(compiled=False):
+    probe_paths = ["/host 日本語 ' \" path/request.json", "/host 日本語 ' \" path/"]
     status = {"success": True, "finished": True, "compiled": compiled,
               "cases": [{"ok": True, **copy.deepcopy(case)} for case in CONTRACT["feature"]["cases"]],
               "fileArgument": {"ok": True, "stdout": "file round trip", "stderr": "", "exitCode": 0},
-              "folderArgument": {"ok": True, "stdout": "folder round trip", "stderr": "", "exitCode": 0}}
+              "folderArgument": {"ok": True, "stdout": "folder round trip", "stderr": "", "exitCode": 0},
+              "argumentProbe": {"ok": True, "stdout": json.dumps(probe_paths, ensure_ascii=True) + "\n",
+                                "stderr": "", "exitCode": 0},
+              "typedPathsExpected": probe_paths,
+              "typedPathsActual": copy.deepcopy(probe_paths),
+              "typedPathsExact": True}
     def apply_assertions(value, assertions):
         for assertion in assertions:
             tokens = assertion["path"].split("/")[1:]
@@ -182,11 +189,70 @@ class ContractTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 runner.validate_status(status, CONTRACT, False)
 
+    def test_composition_decoder_rejects_delivery_and_bad_staging(self):
+        for path in ("/protocolStatuses/0", "/protocolStatuses/1",
+                     "/composeStatuses/2", "/stagingProtocol/1", "/stagingProtocol/2"):
+            status = valid_status()
+            runner._pointer(status, path)["ok"] = True
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+        status = valid_status()
+        status["composeStatuses"][0]["value"]["status"] = "sent"
+        with self.assertRaises(ValueError):
+            runner.validate_status(status, CONTRACT, False)
+
+    def test_native_error_details_and_capabilities_are_required(self):
+        for path, key in (("/nativeError/error", "details"),
+                          ("/nativeInvalid", "exitCode"),
+                          ("/capabilities/value", "deliveryConfirmed"),
+                          ("/fileTypedArgument", "stderr"),
+                          ("/folderTypedArgument", "stderr")):
+            status = valid_status()
+            del runner._pointer(status, path)[key]
+            with self.subTest(path=path, key=key), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+
+    def test_request_type_failures_have_no_fake_exit_status(self):
+        for index in range(13):
+            status = valid_status()
+            status["requestTypes"][index]["exitCode"] = 0
+            with self.subTest(index=index), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+
     def test_execution_successes_preserve_streams_without_feature_value(self):
         status = valid_status()
         status["fileArgument"]["stderr"] = "diagnostic, not a failure"
         runner.validate_status(status, CONTRACT, False)
         status["folderArgument"]["error"] = {"code": "hidden_failure"}
+        with self.assertRaises(ValueError):
+            runner.validate_status(status, CONTRACT, False)
+
+    def test_argument_probe_requires_complete_success_metadata(self):
+        status = valid_status()
+        self.assertTrue(status["argumentProbe"]["stdout"].isascii())
+        self.assertTrue(status["argumentProbe"]["stdout"].endswith("\n"))
+        self.assertEqual(json.loads(status["argumentProbe"]["stdout"]), status["typedPathsExpected"])
+        self.assertEqual(status["typedPathsActual"], status["typedPathsExpected"])
+        for key in ("ok", "stdout", "stderr", "exitCode"):
+            status = valid_status()
+            del status["argumentProbe"][key]
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+        for key, value in (("ok", False), ("stdout", ""), ("stderr", "probe diagnostic"),
+                           ("exitCode", 1), ("error", {"code": "launch_failed"})):
+            status = valid_status()
+            status["argumentProbe"][key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+
+    def test_typed_paths_require_literal_exact_comparison_success(self):
+        for value in (False, None, 0, 1, "true", [], {}):
+            status = valid_status()
+            status["typedPathsExact"] = value
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                runner.validate_status(status, CONTRACT, False)
+        status = valid_status()
+        del status["typedPathsExact"]
         with self.assertRaises(ValueError):
             runner.validate_status(status, CONTRACT, False)
 
@@ -271,6 +337,8 @@ class HostRunnerTests(unittest.TestCase):
             self.assertIn('"', host.parent.name)
         self.assertFalse((host / "environment4d.json").exists())
         request = json.loads(request_path.read_text(encoding="utf-8"))
+        self.assertEqual(Path(request["argumentProbeExecutable"]), Path(sys.executable).resolve())
+        self.assertTrue(Path(request["argumentProbeExecutable"]).is_absolute())
         self.assertEqual(Path(request["executable"]).parent, host)
         self.assertEqual(Path(request["executable"]).read_bytes(), b"unit test native resource")
         self.assertEqual(Path(request["status"]).parent, host)

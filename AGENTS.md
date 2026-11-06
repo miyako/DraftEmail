@@ -562,9 +562,9 @@ CI handles branch pushes, PRs and dispatch, never tags; the bot's `GITHUB_TOKEN`
 commit does not recursively trigger CI. Publish explicitly calls reusable CI
 with `release_call:true` to avoid a second optional compiled inspection.
 The same input commit must bind all native manifests and acceptance evidence.
-Signing policy is read at the version commit SHA. Manual
-`require_apple_signing` can escalate an unsigned version but cannot downgrade
-a policy-required signed version.
+Signing policy is read at the version commit SHA. Publish resolves signing
+only from `release-policy.json`; it has no manual signing override. A
+policy-required signed version cannot be downgraded.
 Only after compilation and exact final-host success does `release_assets.py`
 verify downloaded ZIP/DMG/proof bytes, accepted hashes/sizes, revision, native
 manifests and full source/final-host contracts. It then verifies main ancestry,
@@ -647,7 +647,7 @@ resources, compile fresh, and load the **exact final ZIP's** unpacked component.
 Report unsupported/unavailable checks as `not_run`; local success remains
 `release_ready:false`. Approved publication additionally requires a main-only
 version commit, all required native artifact/tests, hosted 4D opt-in and the final
-package-host gate. Signing is optional by default; a listed version or explicit signed dispatch
+package-host gate. Signing is optional by default; a listed version
 requires every signing/notarization gate to pass before tag creation/publication.
 
 The final handoff must identify the repository/namespace/class/CLI/language,
@@ -722,8 +722,9 @@ initialization. It defaults to
 `{"schema":1,"apple_notarized_versions":[]}`. List exact component versions
 without `v` to require signed releases; commit the policy before running Publish
 for that next version. A missing policy or unlisted version means unsigned, malformed
-policy fails closed. Manual release `require_apple_signing` and the helper's
-`--require-apple-signing` can only escalate, never downgrade policy.
+policy fails closed. Publish has no signing dispatch override. The helper's
+`--require-apple-signing` remains available for explicitly authorized signed
+test artifacts and for enforcing resolved policy; it cannot downgrade policy.
 `scripts/sign_release.py policy --root .` emits `apple_signing` without accessing
 secrets; the workflow passes credentials only to the policy-true stage.
 Merely registering secrets does not change policy, and no secret below is
